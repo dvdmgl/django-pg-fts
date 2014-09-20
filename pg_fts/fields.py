@@ -19,6 +19,7 @@ class TSVectorBaseField(Field):
         kwargs['default'] = ''
         kwargs['editable'] = False
         kwargs['serialize'] = False
+        kwargs['db_index'] = False  # use migrations for index creation
         self.dictionary = dictionary
         super(TSVectorBaseField, self).__init__(**kwargs)
 
@@ -55,16 +56,14 @@ class TSVectorBaseField(Field):
 
 class TSVectorField(TSVectorBaseField):
     DEFAUL_RANK = 'D'
-    AVAILABLE_INDEX = ('gist', 'gin')
     RANK_LEVELS = ('A', 'B', 'C', 'D')
     default_error_messages = {
         'fields_error': _('Fields must be tuple or list of fields:'),
         'index_error': _('Invalid index:'),
     }
 
-    def __init__(self, fields, dictionary='english', fts_index='gin', **kwargs):
+    def __init__(self, fields, dictionary='english', **kwargs):
         self.fields = fields
-        self.fts_index = fts_index
         super(TSVectorField, self).__init__(dictionary, **kwargs)
 
     def _get_fields_and_ranks(self):
@@ -135,15 +134,6 @@ class TSVectorField(TSVectorBaseField):
                         )
                     )
 
-        if self.fts_index and self.fts_index not in self.AVAILABLE_INDEX:
-            errors.append(
-                checks.Error(
-                    'Invalid fts_index "%s" :' % (self.fts_index, ),
-                    hint='Full text search index gist or gin',
-                    obj=self,
-                    id='fts.E002'
-                )
-            )
         return errors
 
     @property
@@ -154,7 +144,6 @@ class TSVectorField(TSVectorBaseField):
         name, path, args, kwargs = super(TSVectorField, self).deconstruct()
         path = 'pg_fts.fields.TSVectorField'
         kwargs['fields'] = self.fields
-        kwargs['fts_index'] = self.fts_index
         return name, path, args, kwargs
 
     def get_dictionary(self):

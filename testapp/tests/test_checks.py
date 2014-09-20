@@ -13,7 +13,7 @@ class TestChecks(TestCase):
             body = models.TextField()
 
             tsvector = TSVectorField(
-                (('title', 'A'), 'body'), fts_index='gin')
+                (('title', 'A'), 'body'))
 
         error_clean = TSVectorModelClean._meta.get_field('tsvector')
         self.assertEqual(len(error_clean.check()), 0)
@@ -23,8 +23,8 @@ class TestChecks(TestCase):
             body = models.TextField()
 
             tsvector = TSVectorField(
-                (('x', 'z'), 'body'), fts_index='asd')
+                (('x', 'z'), 'body'))
 
         error = TSVectorModelError._meta.get_field('tsvector')
 
-        self.assertEqual(len(error.check()), 3)
+        self.assertEqual(len(error.check()), 2)

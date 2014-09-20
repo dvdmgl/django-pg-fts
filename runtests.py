@@ -49,7 +49,7 @@ if not settings.configured:
 
 def runtests():
     setup()
-    argv = sys.argv[:1] + ['test', 'pg_fts'] + sys.argv[1:]
+    argv = sys.argv[:1] + ['test', 'testapp'] + sys.argv[1:]
 
     execute_from_command_line(argv)
 
