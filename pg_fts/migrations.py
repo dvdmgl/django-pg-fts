@@ -6,9 +6,10 @@ from pg_fts.fields import TSVectorField
 __all__ = ('CreateFTSIndexOperation', 'CreateFTSTriggerOperation')
 
 
-class CreateFTSTriggerOperation(Operation):
+class PgFtsSQL(object):
     sql_delete_trigger = ("DROP TRIGGER {model}_{fts_name}_update ON {model};"
                           "DROP FUNCTION {model}_{fts_name}_update()")
+
     sql_create_trigger = """
 CREATE FUNCTION {model}_{fts_name}_update() RETURNS TRIGGER AS $$
 BEGIN
@@ -25,49 +26,20 @@ END;
 $$ LANGUAGE 'plpgsql';
 CREATE TRIGGER {model}_{fts_name}_update BEFORE INSERT OR UPDATE ON {model}
 FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
-    reduces_to_sql = True
-    reversible = True
 
-    def __init__(self, name, fts_vector):
-        self.name = name
-        self.fts_vector = fts_vector
+    sql_create_index = ("CREATE INDEX {model}_{fts_name} ON {model} "
+                        "USING {fts_index}({fts_name})")
 
-    def state_forwards(self, app_label, state):
-        pass
+    sql_delete_index = 'DROP INDEX {model}_{fts_name}'
 
-    def database_forwards(self, app_label, schema_editor, from_state,
-                          to_state):
-
-        model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
-        trigger = self._create_fts_trigger_sql(
-            model=model,
-            vector_field=vector_field
-        )
-
-        if trigger:
-            schema_editor.execute(trigger)
-
-    def database_backwards(self, app_label, schema_editor, from_state,
-                           to_state):
-
-        model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
-
-        triggers = self.sql_delete_trigger.format(
+    def delete_trigger(self, model, field):
+        return self.sql_delete_trigger.format(
             model=model._meta.db_table,
-            fts_name=vector_field.get_attname_column()[1]
+            fts_name=field.get_attname_column()[1]
         )
 
-        if triggers:
-            schema_editor.execute(triggers)
+    def create_fts_trigger(self, model, vector_field):
 
-    def describe(self):
-        return "Create trigger `%s` for model `%s`" % (
-            self.fts_vector, self.name
-        )
-
-    def _create_fts_trigger_sql(self, model, vector_field):
         fields = []
         vectors = []
 
@@ -99,17 +71,109 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
             dictionary, field.get_attname_column()[1], weight
         )
 
+    def create_index(self, model, vector_field, index):
+        return self.sql_create_index.format(
+            model=model._meta.db_table,
+            fts_index=index,
+            fts_name=vector_field.get_attname_column()[1]
+        )
+
+    def delete_index(self, model, vector_field):
+        return self.sql_delete_index.format(
+            model=model._meta.db_table,
+            fts_name=vector_field.get_attname_column()[1]
+        )
+
+
+class CreateFTSTriggerOperation(Operation):
+    reduces_to_sql = True
+    reversible = True
+
+    sql_creator = PgFtsSQL()
+
+    def __init__(self, name, fts_vector):
+        self.name = name
+        self.fts_vector = fts_vector
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def database_forwards(self, app_label, schema_editor, from_state,
+                          to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+
+        schema_editor.execute(self.sql_creator.create_fts_trigger(
+            model,
+            vector_field
+        ))
+
+    def database_backwards(self, app_label, schema_editor, from_state,
+                           to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+
+        schema_editor.execute(self.sql_creator.delete_trigger(
+            model,
+            vector_field
+        ))
+
+    def describe(self):
+        return "Create trigger `%s` for model `%s`" % (
+            self.fts_vector, self.name
+        )
+
+
+class DeleteFTSTriggerOperation(Operation):
+    reduces_to_sql = True
+    reversible = True
+
+    sql_creator = PgFtsSQL()
+
+    def __init__(self, name, fts_vector):
+        self.name = name
+        self.fts_vector = fts_vector
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def database_forwards(self, app_label, schema_editor, from_state,
+                          to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+
+        schema_editor.execute(self.sql_creator.delete_trigger(
+            model,
+            vector_field
+        ))
+
+    def database_backwards(self, app_label, schema_editor, from_state,
+                           to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+
+        schema_editor.execute(self.sql_creator.create_fts_trigger(
+            model,
+            vector_field
+        ))
+
+    def describe(self):
+        return "Delete trigger `%s` for model `%s`" % (
+            self.fts_vector, self.name
+        )
+
 
 class CreateFTSIndexOperation(Operation):
     # http://www.postgresql.org/docs/9.3/static/textsearch-indexes.html
-    sql_create_index = ("CREATE INDEX {model}_{fts_name} ON {model} "
-                        "USING {fts_index}({fts_name})")
-
-    sql_delete_index = 'DROP INDEX {model}_{fts_name}'
     INDEXS = ('gin', 'gist')
     reduces_to_sql = True
 
     reversible = True
+    sql_creator = PgFtsSQL()
 
     def __init__(self, name, fts_vector, index):
         assert index in self.INDEXS, "Invalid index '%s'. Options %s " % (
@@ -128,7 +192,9 @@ class CreateFTSIndexOperation(Operation):
         vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
         if not isinstance(vector_field, TSVectorField):
             raise AttributeError
-        schema_editor.execute(self._create_index_sql(model, vector_field))
+        schema_editor.execute(self.sql_creator.create_index(
+            model, vector_field, self.index
+        ))
 
     def database_backwards(self, app_label, schema_editor, from_state,
                            to_state):
@@ -136,22 +202,54 @@ class CreateFTSIndexOperation(Operation):
         model = from_state.render().get_model(app_label, self.name)
         vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
 
-        indexs = self.sql_delete_index.format(
-            model=model._meta.db_table,
-            fts_name=vector_field.get_attname_column()[1]
-        )
-
-        if indexs:
-            schema_editor.execute(indexs)
+        schema_editor.execute(self.sql_creator.delete_index(
+            model,
+            vector_field
+        ))
 
     def describe(self):
-        return "Create index `%s` for model `%s`" % (
-            self.fts_vector, self.name
+        return "Create %s index `%s` for model `%s`" % (
+            self.index, self.fts_vector, self.name
         )
 
-    def _create_index_sql(self, model, fts_vector):
-        return self.sql_create_index.format(
-            model=model._meta.db_table,
-            fts_index=self.index,
-            fts_name=fts_vector.get_attname_column()[1]
+
+class DeleteFTSIndexOperation(Operation):
+    reduces_to_sql = True
+    reversible = True
+    INDEXS = ('gin', 'gist')
+    sql_creator = PgFtsSQL()
+
+    def __init__(self, name, fts_vector, index):
+        assert index in self.INDEXS, "Invalid index '%s'. Options %s " % (
+            index, ', '.join(self.INDEXS))
+        self.name = name
+        self.fts_vector = fts_vector
+        self.index = index
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def database_forwards(self, app_label, schema_editor, from_state,
+                          to_state):
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+
+        schema_editor.execute(self.sql_creator.delete_index(
+            model,
+            vector_field
+        ))
+
+    def database_backwards(self, app_label, schema_editor, from_state,
+                           to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+        if not isinstance(vector_field, TSVectorField):
+            raise AttributeError
+        schema_editor.execute(self.sql_creator.create_index(
+            model, vector_field, self.index))
+
+    def describe(self):
+        return "Delete %s index `%s` for model `%s`" % (
+            self.index, self.fts_vector, self.name
         )

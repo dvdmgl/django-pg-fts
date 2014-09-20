@@ -48,6 +48,11 @@ class FTSTestBase(TransactionTestCase):
             self.assertIn(table,
                           connection.introspection.get_table_list(cursor))
 
+    def assertTableNotExists(self, table):
+        with connection.cursor() as cursor:
+            self.assertNotIn(table,
+                             connection.introspection.get_table_list(cursor))
+
 
 class CreateOperationTestSQL(TestCase):
     # single dictionary
@@ -156,6 +161,14 @@ class TransactionsMigrationsTest(FTSTestBase):
         call_command('migrate', 'testapp', '0004', stdout=stdout)
         self.assertFunctionExists('testapp_tsvectormodel_tsvector_update')
         self.assertTriggerExists('testapp_tsvectormodel_tsvector_update')
+        call_command('migrate', 'testapp', '0005', stdout=stdout)
+        self.assertFunctionNotExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTriggerNotExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTableNotExists('testapp_tsvectormodel')
+        call_command('migrate', 'testapp', '0004', stdout=stdout)
+        self.assertFunctionExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTriggerExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTableExists('testapp_tsvectormodel')
         call_command('migrate', 'testapp', '0003', stdout=stdout)
         self.assertFunctionNotExists('testapp_tsvectormodel_tsvector_update')
         self.assertTriggerNotExists('testapp_tsvectormodel_tsvector_update')
@@ -179,6 +192,14 @@ class TransactionsMigrationsTest(FTSTestBase):
         call_command('migrate', 'testapp', '0004', stdout=stdout)
         self.assertFunctionExists('testapp_tsvectormodel_tsvector_update')
         self.assertTriggerExists('testapp_tsvectormodel_tsvector_update')
+        call_command('migrate', 'testapp', '0005', stdout=stdout)
+        self.assertFunctionNotExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTriggerNotExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTableNotExists('testapp_tsvectormodel')
+        call_command('migrate', 'testapp', '0004', stdout=stdout)
+        self.assertFunctionExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTriggerExists('testapp_tsvectormodel_tsvector_update')
+        self.assertTableExists('testapp_tsvectormodel')
         call_command('migrate', 'testapp', '0003', stdout=stdout)
         self.assertFunctionNotExists('testapp_tsvectormodel_tsvector_update')
         self.assertTriggerNotExists('testapp_tsvectormodel_tsvector_update')
