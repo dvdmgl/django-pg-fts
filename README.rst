@@ -10,14 +10,24 @@ Classes
 
 `pg_fts.fields.VectorField`
     An tsvector index field which stores converted text into special format.
+
 `pg_fts.migrations.CreateFTSIndexOperation`
-    An migration tool to create index's
+    Create index's `gin` or `gist`
+
+`pg_fts.migrations.CreateFTSTriggerOperation`
+    Create trigger for updating VectorField of fields options
+
+`pg_fts.migrations.DeleteFTSIndexOperation`
+    Remove index
+
+`pg_fts.migrations.DeleteFTSTriggerOperation`
+    Remove trigger
 
 
 ``TSVectorField``
 -----------------
 
-.. class:: TSVectorField([fields, dictionary='english', fts_index='gin', editable=False, serialize=False, default='', **options])
+.. class:: TSVectorField([fields, dictionary='english', editable=False, serialize=False, default='', **options])
 
 .. attribute:: TSVectorField.fields
     
@@ -26,26 +36,70 @@ Classes
 
 .. attribute:: TSVectorField.dictionary
     
-    Name of the dictionary in postgresql or the name of the field for multidict with charfield and choices
+    Name of the dictionary in postgresql or the name of the field for multidict with CharField with postgreSQL dictionaries as choices
 
-.. attribute:: TSVectorField.fts_index
-    
-    Type of index can be 'gist' or 'gin'
 
 ``CreateFTSIndexOperation``
 ---------------------------
 
-.. class:: CreateFTSIndexOperation([model, fts_vectors])
+.. class:: CreateFTSIndexOperation(name, fts_vector, index)
 
-.. attribute:: CreateFTSIndexOperation.model
+.. attribute:: CreateFTSIndexOperation.name
     
-    Model for index creation
+    the name of the model
 
-.. attribute:: CreateFTSIndexOperation.fts_vectors
+.. attribute:: CreateFTSIndexOperation.fts_vector
 
-    Array of tuples of TSVectorField in model with the field name and field with is properties.
+    the TSVectorField name
 
-    See examples
+.. attribute:: CreateFTSIndexOperation.index
+
+    the index can be `gist` or `gin`
+
+``CreateFTSTriggerOperation``
+---------------------------
+
+.. class:: CreateFTSTriggerOperation(name, fts_vector)
+
+.. attribute:: CreateFTSTriggerOperation.name
+    
+    the name of the model
+
+.. attribute:: CreateFTSTriggerOperation.fts_vector
+
+    the TSVectorField name
+
+
+``DeleteFTSIndexOperation``
+---------------------------
+
+.. class:: DeleteFTSIndexOperation(name, fts_vector, index)
+
+.. attribute:: DeleteFTSIndexOperation.name
+    
+    the name of the model
+
+.. attribute:: DeleteFTSIndexOperation.fts_vector
+
+    the TSVectorField name
+
+.. attribute:: DeleteFTSIndexOperation.index
+
+    the index can be `gist` or `gin`
+
+``DeleteFTSTriggerOperation``
+---------------------------
+
+.. class:: DeleteFTSTriggerOperation(name, fts_vector)
+
+.. attribute:: DeleteFTSTriggerOperation.name
+    
+    the name of the model
+
+.. attribute:: DeleteFTSTriggerOperation.fts_vector
+
+    the TSVectorField name
+
 
 
 Usage examples:
@@ -64,7 +118,6 @@ Usage examples:
 
         fts_index = TSVectorField(
             (('title', 'A'), 'article'),
-            fts_index='gin',
             dictionary='portuguese'
         )
 
@@ -80,8 +133,7 @@ in the auto-generated migration
 
 .. code-block:: python
 
-    from pg_fts.migrations import CreateFTSIndexOperation
-    from testapp.models import Article
+    from pg_fts.migrations import CreateFTSIndexOperation, CreateFTSTriggerOperation
     ...
     class Migration(migrations.Migration):
     ...
@@ -93,10 +145,13 @@ in the auto-generated migration
         ),
         # add CreateFTSIndexOperation
         CreateFTSIndexOperation(
-        model=Article,
-        fts_vectors=[
-            ('fts_index', pg_fts.fields.TSVectorField(default='', null=True, fts_index='gin', fields=(('title', 'A'), 'article'), serialize=False, dictionary='portuguese', editable=False)),
-        ]
+            name='Article',
+            fts_vector='fts_index',
+            index='gin'
+        ),
+        CreateFTSTriggerOperation(
+            name='Article',
+            fts_vector='fts_index',
         )
     ]
 

@@ -6,7 +6,7 @@ from django.core import checks, exceptions
 from django.utils.translation import string_concat, ugettext_lazy as _
 from django.db import models
 from django.db.models.aggregates import Aggregate
-
+import re
 
 __all__ = ('TSVectorField', 'TSVectorBaseField', 'TSRank')
 
@@ -29,23 +29,21 @@ class TSVectorBaseField(Field):
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
         if lookup_type in ('search', 'isearch'):
-            values = value.split(' ')
+            values = re.sub(r'[^\w ]', '', value).split(' ')
             operation = ' & ' if lookup_type == 'search' else ' | '
             return [self.get_db_prep_value(
-                "%s" % operation.join(v for v in values),
+                "%s" % operation.join(v for v in values if v),
                 connection=connection,
                 prepared=prepared)]
 
         elif lookup_type == 'tsquery':
+            value = re.sub(r'[^\w &\|]', '', value)
             return [self.get_db_prep_value(value, connection=connection,
                                            prepared=prepared)]
 
         raise exceptions.FieldError("'%s' isn't valid Lookup for %s" % (
             lookup_type, self.__class__.__name__)
         )
-
-        # return super(TSVectorBaseField, self).get_db_prep_lookup(
-        #     lookup_type, value, connection, prepared=False)
 
     def deconstruct(self):
         name, path, args, kwargs = super(TSVectorBaseField, self).deconstruct()

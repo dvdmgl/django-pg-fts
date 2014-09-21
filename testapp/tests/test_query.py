@@ -24,6 +24,8 @@ salvão save o the planeta planet"""
     def test_search(self):
         q = TSQueryModel.objects.filter(tsvector__search='para mesmo')
         self.assertEqual(len(q), 2)
+        self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo)''',
+                      str(q.query))
         self.assertEqual(
             q[0].title, 'para for os the mesmo same malucos crazy')
         self.assertEqual(
@@ -36,6 +38,9 @@ salvão save o the planeta planet"""
         q = TSQueryModel.objects.filter(tsvector__isearch='para mesmo')
         self.assertEqual(
             q[0].title, 'para for os the mesmo same malucos crazy')
+
+        self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para | mesmo)''',
+                      str(q.query))
         self.assertEqual(
             len(TSQueryModel.objects.filter(
                 tsvector__isearch='para mesmo todos')),
@@ -51,15 +56,8 @@ salvão save o the planeta planet"""
                 tsvector__tsquery='para | mesmo | todos')),
             2
         )
-
-    def test_sql(self):
-        self.assertEqual.__self__.maxDiff = None
-        tsv = TSQueryModel.objects.filter(tsvector__tsquery='para & mesmo')
-        isearch = TSQueryModel.objects.filter(tsvector__isearch='para mesmo')
-        search = TSQueryModel.objects.filter(tsvector__search='para mesmo')
-        # self.assertEqual(str(tsv.query), '''SELECT "fts_tsquerymodel"."id", "fts_tsquerymodel"."title", "fts_tsquerymodel"."body", "fts_tsquerymodel"."tsvector" FROM "fts_tsquerymodel" WHERE "fts_tsquerymodel"."tsvector" @@ to_tsquery('english', 'para & mesmo')''')
-        # self.assertEqual(str(isearch.query), '''SELECT "fts_tsquerymodel"."id", "fts_tsquerymodel"."title", "fts_tsquerymodel"."body", "fts_tsquerymodel"."tsvector" FROM "fts_tsquerymodel" WHERE "fts_tsquerymodel"."tsvector" @@ to_tsquery('english', 'para | mesmo')''')
-        # self.assertEqual(str(search.query), '''SELECT "fts_tsquerymodel"."id", "fts_tsquerymodel"."title", "fts_tsquerymodel"."body", "fts_tsquerymodel"."tsvector" FROM "fts_tsquerymodel" WHERE "fts_tsquerymodel"."tsvector" @@ to_tsquery('english', 'para & mesmo')''')
+        self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo)''',
+                      str(q.query))
 
 
 class TestQueryingMultiDictionary(TestCase):
@@ -86,10 +84,7 @@ salvão save o the planeta planet"""
         self.assertNotEqual(pt[0].tsvector, en[0].tsvector)
 
     def test_dictinary_transform_search(self):
-        transformpt = TSMultidicModel.objects.filter(
-            tsvector__portuguese__tsquery='para & os',
-            dictionary='portuguese'
-        )
+        # `para``os` are stopwords in portuguese
         self.assertEqual(len(
             TSMultidicModel.objects.filter(
                 tsvector__portuguese__tsquery='para & os',
@@ -99,7 +94,35 @@ salvão save o the planeta planet"""
 
         self.assertEqual(len(
             TSMultidicModel.objects.filter(
+                tsvector__portuguese__search='para os',
+                dictionary='portuguese'
+            )
+            ), 0)
+
+        self.assertEqual(len(
+            TSMultidicModel.objects.filter(
+                tsvector__portuguese__isearch='para os',
+                dictionary='portuguese'
+            )
+            ), 0)
+
+        self.assertEqual(len(
+            TSMultidicModel.objects.filter(
                 tsvector__english__tsquery='para & os',
+                dictionary='english'
+            )
+            ), 1)
+
+        self.assertEqual(len(
+            TSMultidicModel.objects.filter(
+                tsvector__english__search='para os',
+                dictionary='english'
+            )
+            ), 1)
+
+        self.assertEqual(len(
+            TSMultidicModel.objects.filter(
+                tsvector__english__isearch='para & os',
                 dictionary='english'
             )
             ), 1)

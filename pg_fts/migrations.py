@@ -3,7 +3,8 @@ from django.db.models.loading import get_model
 from pg_fts.fields import TSVectorField
 
 
-__all__ = ('CreateFTSIndexOperation', 'CreateFTSTriggerOperation')
+__all__ = ('CreateFTSIndexOperation', 'CreateFTSTriggerOperation'
+           'DeleteFTSIndexOperation', 'DeleteFTSTriggerOperation')
 
 
 class PgFtsSQL(object):
