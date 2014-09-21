@@ -124,6 +124,23 @@ Usage examples:
         def __str__(self):
             return self.title
 
+    class ArticleMulti(models.Model):
+        title = models.CharField(max_length=255)
+        article = models.TextField()
+        # dictionary field to be used in query and trigger
+        dictionary = models.CharField(
+            max_length=15,
+            choices=(('english', 'english'), ('portuguese', 'portuguese')),
+            default='english'
+        )
+
+        fts_index = TSVectorField(
+            (('title', 'A'), 'article'),
+            dictionary='dictionary'  # refers to dictionary field in model
+        )
+
+        def __str__(self):
+            return self.title
 
 run `manage.py makemigrations testapp`
 
@@ -139,18 +156,42 @@ in the auto-generated migration
     ...
     operations = [
         migrations.CreateModel(
-        ...
-        ('fts_index', pg_fts.fields.TSVectorField(default='', null=True, fts_index='gin', fields=(('title', 'A'), 'article'), serialize=False, dictionary='portuguese', editable=False)),
-        ...
+            name='Article',
+            fields=[
+                ('fts_index', pg_fts.fields.TSVectorField(editable=False, serialize=False, null=True, fields=(('title', 'A'), 'article'), dictionary='portuguese', default='')),
+                ...
+            ],
+            ...
         ),
-        # add CreateFTSIndexOperation
+        migrations.CreateModel(
+            name='ArticleMulti',
+            fields=[
+                ('dictionary', models.CharField(max_length=15, default='english', choices=[('english', 'english'), ('portuguese', 'portuguese')])),
+                ('fts_index', pg_fts.fields.TSVectorField(editable=False, serialize=False, null=True, fields=(('title', 'A'), 'article'), dictionary='dictionary', default='')),
+                ...
+            ],
+            ...
+        ),
+        # create gin index Article.fts_index
         CreateFTSIndexOperation(
             name='Article',
             fts_vector='fts_index',
             index='gin'
         ),
+        # create insert and update trigger to Article.fts_index
         CreateFTSTriggerOperation(
             name='Article',
+            fts_vector='fts_index',
+        )
+        # create gin index ArticleMulti.fts_index
+        CreateFTSIndexOperation(
+            name='ArticleMulti',
+            fts_vector='fts_index',
+            index='gin'
+        ),
+        # create insert and update trigger to ArticleMulti.fts_index
+        CreateFTSTriggerOperation(
+            name='ArticleMulti',
             fts_vector='fts_index',
         )
     ]
@@ -162,7 +203,7 @@ run `manage.py makemigrate testapp`
     >>> Article.objects.create(title='PHP', article='what a pain, the worst of c, c++, perl all mixed in one stupid thing')
     >>> Article.objects.create(title='Python', article='is awesome')
     >>> Article.objects.create(title='Django', article='is awesome, made in python')
-    >>> Article.objects.create(title='Wordpress', article='what a pain, made in PHP, it's ok if you just add a template and some plugins')
+    >>> Article.objects.create(title='Wordpress', article="what a pain, made in PHP, it's ok if you just add a template and some plugins")
     >>> Article.objects.create(title='Javascript', article='A functional language, with c syntax. The braces nightmare')
     >>> Article.objects.filter(fts_index__search='django')
     [<Article: Django>]
@@ -174,5 +215,24 @@ run `manage.py makemigrate testapp`
     # postgress | or
     >>> Article.objects.filter(fts_index__isearch='made in python')
     [<Article: Python>, <Article: Django>, <Article: Wordpress>]
-    # it has wordpress in the results because of 'made'
 
+    ## Multidict
+    >>> ArticleMulti.objects.create(title='PHP', article='what a pain, the worst of c, c++, perl all mixed in one stupid thing', dictionary='english')
+    >>> ArticleMulti.objects.create(title='Python', article='is awesome', dictionary='english')
+    >>> ArticleMulti.objects.create(title='Django', article='is awesome, made in python', dictionary='english')
+    >>> ArticleMulti.objects.create(title='Wordpress', article="what a pain, made in PHP, it's ok if you just add a template and some plugins")
+    >>> ArticleMulti.objects.create(title='Javascript', article='A functional dictionary, with c syntax. The braces nightmare', dictionary='english')
+    ## Portuguese
+    >>> ArticleMulti.objects.create(title='PHP', article='que dor, o pior do c, c++ e perl tudo junto para ser a coisa mais estupida', dictionary='portuguese')
+    >>> ArticleMulti.objects.create(title='Python', article='é Brutal', dictionary='portuguese')
+    >>> ArticleMulti.objects.create(title='Django', article='é Altamente, feito em python', dictionary='portuguese')
+    >>> ArticleMulti.objects.create(title='Wordpress', article="que dor, feito em PHP, não é mau para quem usa os templates e plugins")
+    >>> ArticleMulti.objects.create(title='Javascript', article='Uma linguagem funcional, mas tem sintaxe c para confundir. O pesadelo das chavetas', dictionary='portuguese')
+    >>> django_pt = ArticleMulti.objects.filter(fts_index__portuguese__search='django', dictionary='portuguese')
+    >>> ArticleMulti.objects.filter(fts_index__portuguese__search='pesadelo')
+    [<ArticleMulti: Javascript>]
+    >>> django_pt[0].article
+    'é Altamente, feito em python'
+    >>> django_en = ArticleMulti.objects.filter(fts_index__english__search='django', dictionary='english')
+    >>> django_en[0].article
+    'is awesome, made in python'
