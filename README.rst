@@ -3,7 +3,15 @@ django-pg-fts
 =============
 
 Implementation postgeSQL for Full Text Search for Django >= 1.7
-With multiple dictionary support, index (trigger) creation support
+
+Features:
+- FieldLookup's search, isearch, tsquery
+- Migrations classes to help create and remove index's, support for 'gin' or 'gist'
+- Migration classes to help create and remove of trigger's for updating and inserting
+- Multiple dictionaries support with trigger and FieldLookup's
+
+
+With multiple dictionary support, index and trigger migrations
 
 Classes
 ^^^^^^^

@@ -33,7 +33,6 @@ class TSMultidicModel(models.Model):
         return self.title
 
 
-@python_2_unicode_compatible
 class Related(models.Model):
     single = models.ForeignKey(TSQueryModel, blank=True, null=True)
     multiple = models.ForeignKey(TSMultidicModel, blank=True, null=True)

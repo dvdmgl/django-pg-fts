@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from django.test import TestCase
 from pg_fts.fields import TSVectorField
 from django.db import models

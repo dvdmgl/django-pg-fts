@@ -29,7 +29,7 @@ class TSVectorBaseField(Field):
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
         if lookup_type in ('search', 'isearch'):
-            values = re.sub(r'[^\w ]', '', value).split(' ')
+            values = re.sub(r'[^\w ]', '', value, flags=re.U).split(' ')
             operation = ' & ' if lookup_type == 'search' else ' | '
             return [self.get_db_prep_value(
                 "%s" % operation.join(v for v in values if v),

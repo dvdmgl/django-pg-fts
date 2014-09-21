@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from django.db import connection, models, connections, DEFAULT_DB_ALIAS
 from pg_fts.introspection import PgFTSIntrospection
 from django.test import (override_settings, override_system_checks,

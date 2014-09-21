@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from django.test import TestCase
 from testapp.models import TSQueryModel, TSMultidicModel, Related
 from django.core import exceptions
-
+from django.utils import encoding
 
 __all__ = ('TestQueryingSingleDictionary', 'TestQueryingMultiDictionary')
 
@@ -61,13 +63,14 @@ salvão save o the planeta planet"""
         self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo)''',
                       str(q.query))
 
-    def test_nonasc(self):
+    def test_nonasc(self):  # fail
         ao = TSQueryModel.objects.filter(
             tsvector__isearch='canção & é & vèz',
         )
-        self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', canção | é | vèz)''',
-                      str(ao.query))
-
+        self.assertIn(
+            b'''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', can\xc3\xa7\xc3\xa3o | \xc3\xa9 | v\xc3\xa8z)''',
+            encoding.smart_bytes(ao.query)
+        )
 
     def test_related_search(self):
         q = Related.objects.filter(single__tsvector__search='para mesmo')
