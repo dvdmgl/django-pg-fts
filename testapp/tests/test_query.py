@@ -1,5 +1,5 @@
 from django.test import TestCase
-from testapp.models import TSQueryModel, TSMultidicModel
+from testapp.models import TSQueryModel, TSMultidicModel, Related
 from django.core import exceptions
 
 
@@ -9,17 +9,19 @@ __all__ = ('TestQueryingSingleDictionary', 'TestQueryingMultiDictionary')
 class TestQueryingSingleDictionary(TestCase):
 
     def setUp(self):
-        TSQueryModel.objects.create(
+        a = TSQueryModel.objects.create(
             title='para for os the mesmo same malucos crazy',
             body="""para for os the mesmo same malucos crazy que that tomorow
 salvão save o the planeta planet"""
         )
 
-        TSQueryModel.objects.create(
+        b = TSQueryModel.objects.create(
             title='malucos crazy como like eu me',
             body="""para for os the mesmo same malucos crazy que that tomorow
 salvão save o the planeta planet"""
         )
+        Related.objects.create(single=a)
+        Related.objects.create(single=b)
 
     def test_search(self):
         q = TSQueryModel.objects.filter(tsvector__search='para mesmo')
@@ -59,6 +61,18 @@ salvão save o the planeta planet"""
         self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo)''',
                       str(q.query))
 
+    def test_nonasc(self):
+        ao = TSQueryModel.objects.filter(
+            tsvector__isearch='canção & é & vèz',
+        )
+        self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', canção | é | vèz)''',
+                      str(ao.query))
+
+
+    def test_related_search(self):
+        q = Related.objects.filter(single__tsvector__search='para mesmo')
+        self.assertEqual(len(q), 2)
+
 
 class TestQueryingMultiDictionary(TestCase):
 
@@ -66,16 +80,24 @@ class TestQueryingMultiDictionary(TestCase):
         title = 'para for os the mesmo same malucos crazy'
         body = """para for os the mesmo same malucos crazy que that tomorow
 salvão save o the planeta planet"""
-        TSMultidicModel.objects.create(
+        pt = TSMultidicModel.objects.create(
             title=title,
             body=body,
             dictionary='english'
         )
 
-        TSMultidicModel.objects.create(
+        en = TSMultidicModel.objects.create(
             title=title,
             body=body,
             dictionary='portuguese'
+        )
+
+        Related.objects.create(
+            multiple=pt
+        )
+
+        Related.objects.create(
+            multiple=en
         )
 
     def test_different_vectors_for_different_dictionaries(self):
@@ -124,6 +146,49 @@ salvão save o the planeta planet"""
             TSMultidicModel.objects.filter(
                 tsvector__english__isearch='para & os',
                 dictionary='english'
+            )
+            ), 1)
+
+    def test_related_multidict(self):
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__portuguese__tsquery='para & os',
+                multiple__dictionary='portuguese'
+            )
+            ), 0)
+
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__portuguese__search='para os',
+                multiple__dictionary='portuguese'
+            )
+            ), 0)
+
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__portuguese__isearch='para os',
+                multiple__dictionary='portuguese'
+            )
+            ), 0)
+
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__english__tsquery='para & os',
+                multiple__dictionary='english'
+            )
+            ), 1)
+
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__english__search='para os',
+                multiple__dictionary='english'
+            )
+            ), 1)
+
+        self.assertEqual(len(
+            Related.objects.filter(
+                multiple__tsvector__english__isearch='para & os',
+                multiple__dictionary='english'
             )
             ), 1)
 

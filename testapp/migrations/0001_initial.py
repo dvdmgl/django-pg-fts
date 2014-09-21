@@ -37,6 +37,17 @@ class Migration(migrations.Migration):
             },
             bases=(models.Model,),
         ),
+        migrations.CreateModel(
+            name='Related',
+            fields=[
+                ('id', models.AutoField(primary_key=True, serialize=False, verbose_name='ID', auto_created=True)),
+                ('multiple', models.ForeignKey(to='testapp.TSMultidicModel', null=True, blank=True)),
+                ('single', models.ForeignKey(to='testapp.TSQueryModel', null=True, blank=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
         CreateFTSIndexOperation(
             name='TSQueryModel',
             fts_vector='tsvector',
