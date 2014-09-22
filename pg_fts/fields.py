@@ -8,13 +8,30 @@ from django.db import models
 from django.db.models.aggregates import Aggregate
 import re
 
-__all__ = ('TSVectorField', 'TSVectorBaseField', 'TSRank')
+__all__ = ('TSVectorField', 'TSVectorBaseField', 'TSVectorTsQueryLookup',
+           'TSVectorSearchLookup', 'TSVectorISearchLookup')
+
+"""
+    pg_fts.fields
+    ~~~~~~~~~~~~~
+
+    Implementation of postgres full text search
+
+    @author: David Miguel
+"""
 
 
 class TSVectorBaseField(Field):
+    """
+    Base vector field
+
+    :param dictionary: Dictionary name as is in postgres
+    """
     empty_strings_allowed = True
 
     def __init__(self, dictionary='english', **kwargs):
+        """Vector field
+        """
         kwargs['null'] = True
         kwargs['default'] = ''
         kwargs['editable'] = False
@@ -53,6 +70,20 @@ class TSVectorBaseField(Field):
 
 
 class TSVectorField(TSVectorBaseField):
+    """
+    :param fields: A tuple containing a tuple of fields and rank to be indexed,
+    it can be only the field name the default the rank 'D' will be added
+
+        Example:
+            ('field_name', ('field_name2', 'A'))
+
+        Will result in:
+            (('field_name', 'D'), ('field_name2', 'A'))
+
+    :param dictionary: Can be string with the postgres dictionary name
+    or a text field name in case of multiple dictionaries
+    """
+
     DEFAUL_RANK = 'D'
     RANK_LEVELS = ('A', 'B', 'C', 'D')
     default_error_messages = {
