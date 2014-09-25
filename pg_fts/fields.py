@@ -5,7 +5,6 @@ from django.utils import six
 from django.core import checks, exceptions
 from django.utils.translation import string_concat, ugettext_lazy as _
 from django.db import models
-from django.db.models.aggregates import Aggregate
 import re
 
 __all__ = ('TSVectorField', 'TSVectorBaseField', 'TSVectorTsQueryLookup',
@@ -13,25 +12,31 @@ __all__ = ('TSVectorField', 'TSVectorBaseField', 'TSVectorTsQueryLookup',
 
 """
     pg_fts.fields
-    ~~~~~~~~~~~~~
+    -------------
 
     Implementation of postgres full text search
 
     @author: David Miguel
+
 """
 
 
 class TSVectorBaseField(Field):
+
     """
     Base vector field
 
-    :param dictionary: Dictionary name as is in postgres
+    :param dictionary: Dictionary name as is in PostgreSQL
+        ```pg_catalog.pg_ts_config``` more information in
+        :pg_docs:`PostgreSQL documentation 12.6. Dictionaries
+        <textsearch-dictionaries.html>`
+
     """
+
     empty_strings_allowed = True
 
     def __init__(self, dictionary='english', **kwargs):
-        """Vector field
-        """
+        """Vector field"""
         kwargs['null'] = True
         kwargs['default'] = ''
         kwargs['editable'] = False
@@ -45,6 +50,8 @@ class TSVectorBaseField(Field):
 
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
+        if lookup_type == 'exact':
+            lookup_type = 'search'
         if lookup_type in ('search', 'isearch'):
             values = re.sub(r'[^\w ]', '', value, flags=re.U).split(' ')
             operation = ' & ' if lookup_type == 'search' else ' | '
@@ -72,16 +79,22 @@ class TSVectorBaseField(Field):
 class TSVectorField(TSVectorBaseField):
     """
     :param fields: A tuple containing a tuple of fields and rank to be indexed,
-    it can be only the field name the default the rank 'D' will be added
+        it can be only the field name the default the rank 'D' will be added
 
         Example:
-            ('field_name', ('field_name2', 'A'))
+            ```('field_name', ('field_name2', 'A'))```
 
         Will result in:
-            (('field_name', 'D'), ('field_name2', 'A'))
+            ```(('field_name', 'D'), ('field_name2', 'A'))```
 
-    :param dictionary: Can be string with the postgres dictionary name
-    or a text field name in case of multiple dictionaries
+    :param dictionary: available options:
+
+        - Can be string with the dictionary name ```pg_catalog.pg_ts_config```
+            consult :pg_docs:`PostgreSQL documentation 12.6. Dictionaries
+            <textsearch-dictionaries.html>`
+
+        - A TextField name in case of multiple dictionaries
+
     """
 
     DEFAUL_RANK = 'D'
@@ -197,7 +210,31 @@ class TSVectorField(TSVectorBaseField):
             pass
 
 
-class TSVectorTsQueryLookup(Lookup):
+class TSVectorQuerySQL(object):
+
+    @staticmethod
+    def _as_sql(lhs, rhs, dictionary):
+        return "%s @@ to_tsquery('%s', %s)" % (lhs, dictionary, rhs)
+
+
+class BaseAggregate(TSVectorQuerySQL):
+    sql_function = ''
+    name = ''
+
+    def __init__(self, lookup, **extra):
+        self.lookup = lookup
+        self.extra = extra
+
+    def _default_alias(self):
+        return '%s__%s' % (self.lookup, self.name.lower())
+    default_alias = property(_default_alias)
+
+    def add_to_query(self, query, alias, col, source, is_summary=False):
+
+        query.aggregates[alias] = aggregate
+
+
+class TSVectorTsQueryLookup(TSVectorQuerySQL, Lookup):
     lookup_name = 'tsquery'
 
     def as_sql(self, qn, connection):
@@ -205,9 +242,11 @@ class TSVectorTsQueryLookup(Lookup):
         rhs, rhs_params = self.process_rhs(qn, connection)
         params = lhs_params + rhs_params
         dictionary = self.lhs.dictionary if hasattr(self.lhs, 'dictionary') else self.lhs.source.dictionary
+        return "%s @@ to_tsquery('%s', %s)" % (lhs, dictionary, rhs), params
 
-        return "%s @@ to_tsquery('%s', %s)" % (
-            lhs, dictionary, rhs), params
+    @property
+    def output_field(self):
+        return TSVectorBaseField(self.dictionary)
 
 
 TSVectorBaseField.register_lookup(TSVectorTsQueryLookup)
@@ -236,6 +275,7 @@ class DictionaryTransform(Transform):
 
     def as_sql(self, qn, connection):
         lhs, params = qn.compile(self.lhs)
+        print('AS_SQL', lhs, params)
         return "%s" % lhs, params
 
     @property
