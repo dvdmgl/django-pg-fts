@@ -4,6 +4,7 @@ from django.test import TestCase
 from testapp.models import TSQueryModel, TSMultidicModel, Related
 from django.core import exceptions
 from django.utils import encoding
+from pg_fts.aggregates import FTSRank
 
 __all__ = ('TestQueryingSingleDictionary', 'TestQueryingMultiDictionary')
 
@@ -75,6 +76,7 @@ salvão save o the planeta planet"""
     def test_related_search(self):
         q = Related.objects.filter(single__tsvector__search='para mesmo')
         self.assertEqual(len(q), 2)
+
 
 
 class TestQueryingMultiDictionary(TestCase):

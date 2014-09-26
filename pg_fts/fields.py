@@ -50,24 +50,24 @@ class TSVectorBaseField(Field):
 
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
-        if lookup_type == 'exact':
-            lookup_type = 'search'
+
+        if lookup_type not in ('search', 'isearch', 'tsquery'):
+            raise exceptions.FieldError("'%s' isn't valid Lookup for %s" % (
+                lookup_type, self.__class__.__name__))
+
+        return [self.get_db_prep_value(
+            self._get_db_prep_lookup(lookup_type, value),
+            connection=connection,
+            prepared=prepared)]
+
+    @staticmethod
+    def _get_db_prep_lookup(lookup_type, value):
         if lookup_type in ('search', 'isearch'):
             values = re.sub(r'[^\w ]', '', value, flags=re.U).split(' ')
             operation = ' & ' if lookup_type == 'search' else ' | '
-            return [self.get_db_prep_value(
-                "%s" % operation.join(v for v in values if v),
-                connection=connection,
-                prepared=prepared)]
-
+            return "%s" % operation.join(v for v in values if v)
         elif lookup_type == 'tsquery':
-            value = re.sub(r'[^\w &\|]', '', value)
-            return [self.get_db_prep_value(value, connection=connection,
-                                           prepared=prepared)]
-
-        raise exceptions.FieldError("'%s' isn't valid Lookup for %s" % (
-            lookup_type, self.__class__.__name__)
-        )
+            return re.sub(r'[^\w &\|]', '', value)
 
     def deconstruct(self):
         name, path, args, kwargs = super(TSVectorBaseField, self).deconstruct()
@@ -199,8 +199,9 @@ class TSVectorField(TSVectorBaseField):
         if transform:
             return transform
         try:
-            if name in map(lambda x: x[1],
-                           self.model._meta.get_field(self.dictionary).choices):
+            if name in map(
+                    lambda x: x[1],
+                    self.model._meta.get_field(self.dictionary).choices):
                 return DictionaryTransformFactory(name)
             else:
                 raise exceptions.FieldError("The '%s' is not in %s choices" % (
@@ -210,39 +211,16 @@ class TSVectorField(TSVectorBaseField):
             pass
 
 
-class TSVectorQuerySQL(object):
-
-    @staticmethod
-    def _as_sql(lhs, rhs, dictionary):
-        return "%s @@ to_tsquery('%s', %s)" % (lhs, dictionary, rhs)
-
-
-class BaseAggregate(TSVectorQuerySQL):
-    sql_function = ''
-    name = ''
-
-    def __init__(self, lookup, **extra):
-        self.lookup = lookup
-        self.extra = extra
-
-    def _default_alias(self):
-        return '%s__%s' % (self.lookup, self.name.lower())
-    default_alias = property(_default_alias)
-
-    def add_to_query(self, query, alias, col, source, is_summary=False):
-
-        query.aggregates[alias] = aggregate
-
-
-class TSVectorTsQueryLookup(TSVectorQuerySQL, Lookup):
+class TSVectorTsQueryLookup(Lookup):
     lookup_name = 'tsquery'
+    lookup_sql = "%s @@ to_tsquery('%s', %s)"
 
     def as_sql(self, qn, connection):
         lhs, lhs_params = self.process_lhs(qn, connection)
         rhs, rhs_params = self.process_rhs(qn, connection)
         params = lhs_params + rhs_params
         dictionary = self.lhs.dictionary if hasattr(self.lhs, 'dictionary') else self.lhs.source.dictionary
-        return "%s @@ to_tsquery('%s', %s)" % (lhs, dictionary, rhs), params
+        return self.lookup_sql % (lhs, dictionary, rhs), params
 
     @property
     def output_field(self):
@@ -275,7 +253,6 @@ class DictionaryTransform(Transform):
 
     def as_sql(self, qn, connection):
         lhs, params = qn.compile(self.lhs)
-        print('AS_SQL', lhs, params)
         return "%s" % lhs, params
 
     @property
