@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db.models import Field, Lookup, Transform
 from django.db.models.lookups import RegisterLookupMixin
@@ -35,7 +36,7 @@ class TSVectorBaseField(Field):
         :pg_docs:`PostgreSQL documentation 12.6. Dictionaries
         <textsearch-dictionaries.html>`
 
-    :raises exceptions.FieldError: if lookup isn't tsquery, search or isearch
+    :raises: exceptions.FieldError if lookup isn't tsquery, search or isearch
 
     """
 
@@ -87,9 +88,11 @@ class TSVectorField(TSVectorBaseField):
         it can be only the field name the default the rank 'D' will be added
 
         Example::
+
             ('field_name', ('field_name2', 'A'))
 
         Will result in::
+
             (('field_name', 'D'), ('field_name2', 'A'))
 
     :param dictionary: available options:
@@ -102,14 +105,15 @@ class TSVectorField(TSVectorBaseField):
 
         .. caution::
 
-            Dictionary(ies) used must be installed in your database
+            Dictionary(ies) used must be installed in your database, check
+                ``pg_catalog.pg_ts_config``
 
-    :raises exceptions.FieldError: if lookup isn't tsquery, search or isearch
+    :raises: exceptions.FieldError if lookup isn't tsquery, search or isearch
         or not a valid option dictionary (in case of multiple dictionaries)
 
     .. caution::
 
-            TSVectorField does not support iexact it will raise an exception
+            TSVectorField does not support iexact, it will raise an exception
 
 
     """
@@ -249,7 +253,7 @@ class TSVectorTsQueryLookup(Lookup):
             tsvector__tsquery="'single-quoted phrases' & prefix:A*B & !not | or | weight:ABC"
         )
 
-    SQL equivalent
+    SQL equivalent:
 
     .. code-block:: sql
 
@@ -300,7 +304,7 @@ class TSVectorSearchLookup(TSVectorTsQueryLookup):
             tsvector__search="an and query"
         )
 
-    SQL equivalent::
+    SQL equivalent:::
 
     .. code-block:: sql
 
@@ -336,7 +340,7 @@ class TSVectorISearchLookup(TSVectorTsQueryLookup):
             tsvector__isearch="an and query"
         )
 
-    SQL equivalent
+    SQL equivalent:
 
     .. code-block:: sql
 
@@ -405,7 +409,7 @@ class DictionaryTransform(Transform):
     # dictionary, but if there was no default it wold get the 1st option in
     # options
     # SQL -> to_tsquery('english', 'an | and | query')
-
+    # but if dictionary is not in options will raise FieldError
     >>> Article.objects.filter(
             tsvector__japonese__isearch="an and query"  # will raise an error
         )

@@ -21,6 +21,8 @@ Features:
 
 - Multiple dictionaries support with trigger and FieldLookup's
 
+- Support for python 2.7, 3.3 and 3.4
+
 
 Contents:
 
@@ -38,3 +40,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. caution::
+
+    **USE AT YOUR OWN RISK**, django-pg-fts is at a very early stage of development

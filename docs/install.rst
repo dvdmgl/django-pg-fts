@@ -16,7 +16,11 @@ You should run the tests::
 
     python runtests.py
 
-Install using pip::
+Or running tox for py27, py33, py34::
+    
+    tox
+
+Install using pip from source::
 
     pip install .
 
@@ -27,4 +31,3 @@ Or using setup.py::
 .. caution::
 
     **USE AT YOUR OWN RISK**, django-pg-fts is at a very early stage of development
-

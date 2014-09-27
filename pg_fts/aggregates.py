@@ -106,7 +106,7 @@ class FTSRank(Aggregate):
         Article.objects.annotate(rank=FTSRank(fts_index__search='Hello world',
                                  normalization=[1,2]))
 
-    SQL equivalent
+    SQL equivalent:
 
     .. code-block:: sql
 
@@ -161,7 +161,10 @@ class FTSRankCd(FTSRank):
             rank=FTSRank(fts_index__search='Hello world',
                          normalization=[1,2]))
 
-    SQL equivalent::
+    SQL equivalent:
+
+    .. code-block:: sql
+
         SELECT
             ...,
             ts_rank_cd("article"."fts_index" @@ to_tsquery('english', 'Hello & world'), 1|2) AS "rank"
@@ -194,7 +197,7 @@ class FTSRankDictionay(FTSRank):
             rank=FTSRankDictionay(fts_index__portuguese__search='Hello world',
                                   normalization=[1,2]))
 
-    SQL equivalent::
+    SQL equivalent:
 
     .. code-block:: sql
 
@@ -238,7 +241,7 @@ class FTSRankCdDictionary(FTSRankDictionay):
             rank=FTSRankCdDictionary(fts_index__portuguese__search='Hello world',
                                      normalization=[1,2]))
 
-    SQL equivalent::
+    SQL equivalent:
 
     .. code-block:: sql
 

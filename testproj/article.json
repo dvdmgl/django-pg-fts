@@ -18,7 +18,7 @@
 {
   "fields": {
     "title": "Django",
-    "article": "is awesome, made in python"
+    "article": "is awesome, made in python, multiple databases support, it has a ORM, class based views, template layer"
   },
   "model": "article.article",
   "pk": 3
@@ -41,8 +41,8 @@
 },
 {
   "fields": {
-    "dictionary": "english",
     "title": "PHP",
+    "dictionary": "english",
     "article": "what a pain, the worst of c, c++, perl all mixed in one stupid thing"
   },
   "model": "article.articlemulti",
@@ -50,8 +50,8 @@
 },
 {
   "fields": {
-    "dictionary": "english",
     "title": "Django",
+    "dictionary": "english",
     "article": "is awesome, made in python"
   },
   "model": "article.articlemulti",
@@ -59,8 +59,8 @@
 },
 {
   "fields": {
-    "dictionary": "english",
     "title": "Wordpress",
+    "dictionary": "english",
     "article": "what a pain, made in PHP, it's ok if you just add a template and some plugins"
   },
   "model": "article.articlemulti",
@@ -68,8 +68,8 @@
 },
 {
   "fields": {
-    "dictionary": "english",
     "title": "Javascript",
+    "dictionary": "english",
     "article": "A functional dictionary, with c syntax. The braces nightmare"
   },
   "model": "article.articlemulti",
@@ -77,8 +77,8 @@
 },
 {
   "fields": {
-    "dictionary": "portuguese",
     "title": "PHP",
+    "dictionary": "portuguese",
     "article": "que dor, o pior do c, c++ e perl tudo junto para ser a coisa mais estupida"
   },
   "model": "article.articlemulti",
@@ -86,8 +86,8 @@
 },
 {
   "fields": {
-    "dictionary": "portuguese",
     "title": "Python",
+    "dictionary": "portuguese",
     "article": "\u00e9 Brutal"
   },
   "model": "article.articlemulti",
@@ -95,8 +95,8 @@
 },
 {
   "fields": {
-    "dictionary": "portuguese",
     "title": "Django",
+    "dictionary": "portuguese",
     "article": "\u00e9 Altamente, feito em python"
   },
   "model": "article.articlemulti",
@@ -104,8 +104,8 @@
 },
 {
   "fields": {
-    "dictionary": "english",
     "title": "Wordpress",
+    "dictionary": "english",
     "article": "que dor, feito em PHP, n\u00e3o \u00e9 mau para quem usa os templates e plugins"
   },
   "model": "article.articlemulti",
@@ -113,8 +113,8 @@
 },
 {
   "fields": {
-    "dictionary": "portuguese",
     "title": "Javascript",
+    "dictionary": "portuguese",
     "article": "Uma linguagem funcional, mas tem sintaxe c para confundir. O pesadelo das chavetas"
   },
   "model": "article.articlemulti",
