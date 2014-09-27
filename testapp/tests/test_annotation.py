@@ -2,7 +2,8 @@
 from __future__ import unicode_literals
 from django.test import TestCase
 from testapp.models import TSQueryModel, Related, TSMultidicModel
-from pg_fts.aggregates import FTSRank, FTSRankDictionay
+from pg_fts.aggregates import (FTSRank, FTSRankDictionay, FTSRankCd,
+                               FTSRankCdDictionary)
 from django.core import exceptions
 
 __all__ = ('AnnotateTestCase', 'FTSRankDictionayTestCase')
@@ -105,6 +106,24 @@ salvão save o the planeta planet"""
                       str(qs.query))
         self.assertEqual(len(qs), 2)
 
+    def test_ts_rank_cd_search(self):
+        q = TSQueryModel.objects.annotate(
+            rank=FTSRankCd(tsvector__search='para mesmo')
+        )
+
+        self.assertIn('''WHERE ("testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo))''',
+                      str(q.query))
+
+        self.assertIn('''ts_rank_cd("testapp_tsquerymodel"."tsvector", to_tsquery('english', para & mesmo)) AS "rank"''',
+                      str(q.query))
+
+        self.assertEqual(
+            q.order_by('-rank')[0].title, 'para for os the mesmo same malucos crazy')
+
+        self.assertEqual(
+            q.order_by('rank')[0].title, 'malucos crazy como like eu me')
+
+
 class FTSRankDictionayTestCase(TestCase):
     '''tests for FTSRankDictionayTestCase'''
 
@@ -193,6 +212,29 @@ salvão save o the planeta planet"""
 
         self.assertIn('"testapp_tsmultidicmodel"."tsvector"',
                       str(qn_pt.query).split('GROUP BY')[-1])
+
+    def test_rank_cd_dictionary(self):
+        qn_base_pt = Related.objects.filter(multiple__dictionary='portuguese')
+        qn_base_en = Related.objects.filter(multiple__dictionary='english')
+        qn_pt = qn_base_pt.annotate(rank=FTSRankCdDictionary(
+            multiple__tsvector__portuguese__tsquery='para & os'))
+
+        qn_en = qn_base_en.annotate(rank=FTSRankCdDictionary(
+            multiple__tsvector__english__tsquery='para & os'))
+
+        self.assertIn('''"testapp_tsmultidicmodel"."tsvector" @@ to_tsquery('english', para & os))''',
+                      str(qn_en.query))
+
+        self.assertIn('''ts_rank_cd("testapp_tsmultidicmodel"."tsvector", to_tsquery('english', para & os)) AS "rank"''',
+                      str(qn_en.query))
+
+        self.assertIn('''"testapp_tsmultidicmodel"."tsvector" @@ to_tsquery('portuguese', para & os))''',
+                      str(qn_pt.query))
+
+        self.assertIn('''ts_rank_cd("testapp_tsmultidicmodel"."tsvector", to_tsquery('portuguese', para & os)) AS "rank"''',
+                      str(qn_pt.query))
+
+
 
     def test_transform_dictionary_exception(self):
         with self.assertRaises(exceptions.FieldError) as msg:

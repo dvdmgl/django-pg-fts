@@ -10,6 +10,12 @@ pg_fts.fields module
 .. automodule:: pg_fts.fields
     :members:
 
+pg_fts.aggregates module
+------------------------
+
+.. automodule:: pg_fts.aggregates 
+    :members:
+
 
 pg_fts.introspection module
 ---------------------------

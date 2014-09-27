@@ -13,14 +13,13 @@ Features:
 
 - FieldLookup's search, isearch, tsquery
 
+- Annotations (fake aggregates) for Ranking results with normalization
+
 - Migrations classes to help create and remove index's, support for 'gin' or 'gist'
 
 - Migrations classes to help create and remove of trigger's for updating and inserting
 
 - Multiple dictionaries support with trigger and FieldLookup's
-
-
-With multiple dictionary support, index and trigger migrations
 
 
 Contents:

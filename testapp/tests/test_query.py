@@ -64,6 +64,12 @@ salvão save o the planeta planet"""
         self.assertIn('''WHERE "testapp_tsquerymodel"."tsvector" @@ to_tsquery('english', para & mesmo)''',
                       str(q.query))
 
+    def test_tsquery_re(self):
+        q = TSQueryModel.objects.filter(
+            tsvector__tsquery="'single-quoted phrases' & prefix:A*B & !not  | or | weight:ABC"
+        )
+        self.assertEqual(len(q), 0)  # just test for no errors
+
     def test_nonasc(self):  # fail
         ao = TSQueryModel.objects.filter(
             tsvector__isearch='canção & é & vèz',

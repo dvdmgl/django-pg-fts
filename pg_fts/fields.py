@@ -8,7 +8,8 @@ from django.db import models
 import re
 
 __all__ = ('TSVectorField', 'TSVectorBaseField', 'TSVectorTsQueryLookup',
-           'TSVectorSearchLookup', 'TSVectorISearchLookup')
+           'TSVectorSearchLookup', 'TSVectorISearchLookup',
+           'DictionaryTransform')
 
 """
     pg_fts.fields
@@ -20,6 +21,9 @@ __all__ = ('TSVectorField', 'TSVectorBaseField', 'TSVectorTsQueryLookup',
 
 """
 
+tsvector_re = re.compile(r'[^\w &:\|\!\*\']', flags=re.U)
+search_re = re.compile(r'[^\w ]', flags=re.U)
+
 
 class TSVectorBaseField(Field):
 
@@ -30,6 +34,8 @@ class TSVectorBaseField(Field):
         ```pg_catalog.pg_ts_config``` more information in
         :pg_docs:`PostgreSQL documentation 12.6. Dictionaries
         <textsearch-dictionaries.html>`
+
+    :raises exceptions.FieldError: if lookup isn't tsquery, search or isearch
 
     """
 
@@ -63,11 +69,10 @@ class TSVectorBaseField(Field):
     @staticmethod
     def _get_db_prep_lookup(lookup_type, value):
         if lookup_type in ('search', 'isearch'):
-            values = re.sub(r'[^\w ]', '', value, flags=re.U).split(' ')
             operation = ' & ' if lookup_type == 'search' else ' | '
-            return "%s" % operation.join(v for v in values if v)
+            return "%s" % operation.join(search_re.sub('', value).split())
         elif lookup_type == 'tsquery':
-            return re.sub(r'[^\w &\|]', '', value)
+            return "%s" % ' '.join(tsvector_re.sub('', value).split())
 
     def deconstruct(self):
         name, path, args, kwargs = super(TSVectorBaseField, self).deconstruct()
@@ -81,11 +86,11 @@ class TSVectorField(TSVectorBaseField):
     :param fields: A tuple containing a tuple of fields and rank to be indexed,
         it can be only the field name the default the rank 'D' will be added
 
-        Example:
-            ```('field_name', ('field_name2', 'A'))```
+        Example::
+            ('field_name', ('field_name2', 'A'))
 
-        Will result in:
-            ```(('field_name', 'D'), ('field_name2', 'A'))```
+        Will result in::
+            (('field_name', 'D'), ('field_name2', 'A'))
 
     :param dictionary: available options:
 
@@ -94,6 +99,18 @@ class TSVectorField(TSVectorBaseField):
             <textsearch-dictionaries.html>`
 
         - A TextField name in case of multiple dictionaries
+
+        .. caution::
+
+            Dictionary(ies) used must be installed in your database
+
+    :raises exceptions.FieldError: if lookup isn't tsquery, search or isearch
+        or not a valid option dictionary (in case of multiple dictionaries)
+
+    .. caution::
+
+            TSVectorField does not support iexact it will raise an exception
+
 
     """
 
@@ -190,7 +207,8 @@ class TSVectorField(TSVectorBaseField):
 
     def get_dictionary(self):
         try:
-            return self.model._meta.get_field(self.dictionary).default
+            df = self.model._meta.get_field(self.dictionary)
+            return df.default if df.default else df.options[0][0]
         except models.FieldDoesNotExist:
             return self.dictionary
 
@@ -212,6 +230,41 @@ class TSVectorField(TSVectorBaseField):
 
 
 class TSVectorTsQueryLookup(Lookup):
+    """
+    TSVectorField Lookup tsquery
+
+    Raw to_tsquery lookup, check the documentation for more details
+        :pg_docs:`12.3.2. Parsing Queries
+        <textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES>`
+
+    :param query values: valid PostgreSQL tsquery
+
+        .. caution::
+            If the query is not a valid PostgreSQL to_tsquery will result in a
+            syntax error
+
+    Example::
+
+        Article.objects.filter(
+            tsvector__tsquery="'single-quoted phrases' & prefix:A*B & !not | or | weight:ABC"
+        )
+
+    SQL equivalent
+
+    .. code-block:: sql
+
+        "tsvector" @@ to_tsquery('english', '''singlequoted phrases'' & prefix:A*B & !not | or | weight:ABC')
+
+    .. note::
+
+        The lookup will get dictionary value in
+            :class:`~pg_fts.fields.TSVectorField`, this case *english*
+
+        In case of multiple dictionaries see
+            :class:`~pg_fts.fields.DictionaryTransform`
+
+    """
+
     lookup_name = 'tsquery'
     lookup_sql = "%s @@ to_tsquery('%s', %s)"
 
@@ -219,7 +272,10 @@ class TSVectorTsQueryLookup(Lookup):
         lhs, lhs_params = self.process_lhs(qn, connection)
         rhs, rhs_params = self.process_rhs(qn, connection)
         params = lhs_params + rhs_params
-        dictionary = self.lhs.dictionary if hasattr(self.lhs, 'dictionary') else self.lhs.source.dictionary
+        if hasattr(self.lhs, 'dictionary'):
+            dictionary = self.lhs.dictionary
+        else:
+            dictionary = self.lhs.source.get_dictionary()
         return self.lookup_sql % (lhs, dictionary, rhs), params
 
     @property
@@ -231,6 +287,35 @@ TSVectorBaseField.register_lookup(TSVectorTsQueryLookup)
 
 
 class TSVectorSearchLookup(TSVectorTsQueryLookup):
+    """
+    TSVectorField Lookup search
+
+    An to_tsquery with AND *&* operator
+
+    :param query values: a string with words
+
+    Example::
+
+        Article.objects.filter(
+            tsvector__search="an and query"
+        )
+
+    SQL equivalent::
+
+    .. code-block:: sql
+
+        "tsvector" @@ to_tsquery('english', 'an & and & query')
+
+    .. note::
+
+        The lookup will get dictionary value in
+            :class:`~pg_fts.fields.TSVectorField`, this case *english*
+
+        In case of multiple dictionaries see
+            :class:`~pg_fts.fields.DictionaryTransform`
+
+    """
+
     lookup_name = 'search'
 
 
@@ -238,6 +323,35 @@ TSVectorBaseField.register_lookup(TSVectorSearchLookup)
 
 
 class TSVectorISearchLookup(TSVectorTsQueryLookup):
+    """
+    TSVectorField Lookup isearch
+
+    An to_tsquery with OR *|* operator
+
+    :param query values: a string with words
+
+    Example::
+
+        Article.objects.filter(
+            tsvector__isearch="an and query"
+        )
+
+    SQL equivalent
+
+    .. code-block:: sql
+
+        "tsvector" @@ to_tsquery('english', 'an | and | query')
+
+    .. note::
+
+        The lookup will get dictionary value in
+            :class:`~pg_fts.fields.TSVectorField`, this case *english*
+
+        In case of multiple dictionaries see
+            :class:`~pg_fts.fields.DictionaryTransform`
+
+    """
+
     lookup_name = 'isearch'
 
 
@@ -245,6 +359,60 @@ TSVectorBaseField.register_lookup(TSVectorISearchLookup)
 
 
 class DictionaryTransform(Transform):
+    """
+    TSVectorField dictionary transform
+
+    :param query values: a valid dictionary in
+        :class:`~pg_fts.fields.TSVectorField` field dictionary.options
+
+    Example::
+
+        # in models.py
+
+        class Article(models.Model):
+            title = models.CharField(max_length=255)
+            article = models.TextField()
+            dictionary = models.CharField(
+                max_length=15,
+                choices=(
+                    ('english', 'english'),
+                    ('portuguese', 'portuguese')
+                ),
+                default='english',
+                db_index=True
+            )
+            fts_index = TSVectorField(
+                (('title', 'A'), 'article'),
+                dictionary='dictionary'
+            )
+
+    >>> Article.objects.filter(
+            tsvector__english__isearch="an and query"
+        )
+    # will create a ts_query with english dictionary
+    # SQL -> to_tsquery('english', 'an | and | query')
+
+    >>> Article.objects.filter(
+            tsvector__portuguese__isearch="an and query"
+        )
+    # will create a ts_query with portuguese dictionary
+    # SQL -> to_tsquery('portuguese', 'an | and | query')
+
+    >>> Article.objects.filter(
+            tsvector__isearch="an and query"
+        )
+    # will create a ts_query with english dictionary, it's the default in
+    # dictionary, but if there was no default it wold get the 1st option in
+    # options
+    # SQL -> to_tsquery('english', 'an | and | query')
+
+    >>> Article.objects.filter(
+            tsvector__japonese__isearch="an and query"  # will raise an error
+        )
+    FieldError: The 'japonese' is not in article.Article.dictionary choices
+
+
+    """
 
     def __init__(self, dictionary, *args,
                  **kwargs):

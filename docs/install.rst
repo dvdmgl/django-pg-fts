@@ -13,6 +13,7 @@ Clone from GitHub::
     git clone git://github.com/dvdmgl/django-pg-fts.git django-pg-fts
 
 You should run the tests::
+
     python runtests.py
 
 Install using pip::

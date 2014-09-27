@@ -14,6 +14,9 @@ __all__ = ('FTSRankCd', 'FTSRank', 'FTSRankDictionay', 'FTSRankCdDictionary')
 
 
 class AggregateRegister(aggregates.Aggregate):
+    """
+    Fake aggregate to add rank to querysets
+    """
     is_ordinal = False
     is_computed = True
     sql_template = ("%(function)s(%(field_name)s, to_tsquery('%(dictionary)s',"
@@ -91,6 +94,35 @@ class Aggregate(object):
 
 
 class FTSRank(Aggregate):
+    """
+    Interface for PostgreSQL ts_rank
+
+    Provides a interface for
+        :pg_docs:`12.3.3. Ranking Search Results *ts_rank*
+        <textsearch-controls.html#TEXTSEARCH-RANKING>`
+
+    Example::
+
+        Article.objects.annotate(rank=FTSRank(fts_index__search='Hello world',
+                                 normalization=[1,2]))
+
+    SQL equivalent
+
+    .. code-block:: sql
+
+        SELECT
+            ...,
+            ts_rank("article"."fts_index" @@ to_tsquery('english', 'Hello & world'), 1|2) AS "rank"
+        WHERE
+            "article"."fts_index" @@ to_tsquery('english', 'Hello & world')
+
+    :param fieldlookup: required
+
+    :param normalization: iterable integer
+
+    :returns: rank
+    """
+
     name = 'FTSRank'
     sql_function = 'ts_rank'
     dictionary = ''
@@ -106,11 +138,73 @@ class FTSRank(Aggregate):
         self.lookup = LOOKUP_SEP.join(lookups[:-1])
 
 
-class FTSRankCd(Aggregate):
+class FTSRankCd(FTSRank):
+    """
+    Interface for PostgreSQL ts_rank_cd
+
+    Provides a interface for
+        :pg_docs:`12.3.3. Ranking Search Results *ts_rank_cd*
+        <textsearch-controls.html#TEXTSEARCH-RANKING>`
+
+
+    :param fieldlookup: required
+
+
+    :param normalization: list or tuple of integers PostgreSQL normalization
+        values
+
+    :returns: rank_cd
+
+    Example::
+
+        Article.objects.annotate(
+            rank=FTSRank(fts_index__search='Hello world',
+                         normalization=[1,2]))
+
+    SQL equivalent::
+        SELECT
+            ...,
+            ts_rank_cd("article"."fts_index" @@ to_tsquery('english', 'Hello & world'), 1|2) AS "rank"
+        WHERE
+            "article"."fts_index" @@ to_tsquery('english', 'Hello & world')
+    """
+
     sql_function = 'ts_rank_cd'
+    name = 'FTSRankCd'
 
 
 class FTSRankDictionay(FTSRank):
+    """
+    Interface for PostgreSQL ts_rank with **language lookup**
+
+    Provides a interface for
+        :pg_docs:`12.3.3. Ranking Search Results *rank*
+        <textsearch-controls.html#TEXTSEARCH-RANKING>`
+
+    :param fieldlookup: required
+
+    :param normalization: list or tuple of integers PostgreSQL normalization
+        values
+
+    :returns: rank
+
+    Example::
+
+        Article.objects.annotate(
+            rank=FTSRankDictionay(fts_index__portuguese__search='Hello world',
+                                  normalization=[1,2]))
+
+    SQL equivalent::
+
+    .. code-block:: sql
+
+        SELECT
+            ...,
+            ts_rank("article"."fts_index" @@ to_tsquery('portuguese', 'Hello & world'), 1|2) AS "rank"
+        WHERE
+            "article"."fts_index" @@ to_tsquery('portuguese', 'Hello & world')
+
+    """
 
     def __init__(self, **extra):
         self.normalization = extra.pop('normalization', [])
@@ -124,4 +218,37 @@ class FTSRankDictionay(FTSRank):
 
 
 class FTSRankCdDictionary(FTSRankDictionay):
+    """
+    Interface for PostgreSQL ts_rank_cd with **language lookup**
+
+    Provides a interface for
+        :pg_docs:`12.3.3. Ranking Search Results *rank_cd*
+        <textsearch-controls.html#TEXTSEARCH-RANKING>` with **language lookup**
+
+    :param fieldlookup: required
+
+    :param normalization: list or tuple of integers PostgreSQL normalization
+        values
+
+    :returns: rank_cd
+
+    Example::
+
+        Article.objects.annotate(
+            rank=FTSRankCdDictionary(fts_index__portuguese__search='Hello world',
+                                     normalization=[1,2]))
+
+    SQL equivalent::
+
+    .. code-block:: sql
+
+        SELECT
+            ...,
+            ts_rank("article"."fts_index" @@ to_tsquery('portuguese', 'Hello & world'), 1|2) AS "rank"
+        WHERE
+            "article"."fts_index" @@ to_tsquery('portuguese', 'Hello & world')
+
+    """
+
     sql_function = 'ts_rank_cd'
+    name = 'FTSRankCdDictionary'
