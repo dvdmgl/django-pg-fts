@@ -6,7 +6,7 @@
 Welcome to django-pg-fts's documentation!
 =========================================
 
-Implementation PostgeSQL for Full Text Search for Django >= 1.7
+Implementation PostgeSQL for Full Text Search for Django 1.7, taking advantage of new features Migrations and Custom Lookups
 
 Features:
 ---------
@@ -41,6 +41,3 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. caution::
-
-    **USE AT YOUR OWN RISK**, django-pg-fts is at a very early stage of development
