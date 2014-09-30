@@ -123,6 +123,15 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
 
 
 class UpdateVectorOperation(Operation):
+    """
+    Updates changes to :class:`~pg_fts.fields.TSVectorField` for existing
+    models
+
+    :param name: The Model name
+
+    :param fts_vector: The :class:`~pg_fts.fields.TSVectorField` field name
+    """
+
     reduces_to_sql = True
     reversible = True
     sql_creator = PgFtsSQL()
@@ -139,11 +148,6 @@ class UpdateVectorOperation(Operation):
 
         model = from_state.render().get_model(app_label, self.name)
         vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
-        # sql = self.sql_creator.update_vector(
-        #     model,
-        #     vector_field
-        # )
-        # print(sql)
         schema_editor.execute(self.sql_creator.update_vector(
             model,
             vector_field
