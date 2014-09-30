@@ -77,7 +77,18 @@ At the end of the array ``operations`` add operation :class:`~pg_fts.migrations.
         index='gin'
     ),
 
-And also add :class:`~pg_fts.fields.TSVectorField` to create an automatic trigger for updating the ``fts_index``::
+.. note::
+
+    :class:`~pg_fts.migrations.CreateFTSTriggerOperation` only updates vector on future updates/inserts.
+
+    For indexing the current data add to operations :class:`~pg_fts.migrations.UpdateVectorOperation`::
+
+        UpdateVectorOperation(
+            name='Article',
+            fts_vector='fts_index',
+        )
+
+And also add :class:`~pg_fts.migrations.CreateFTSTriggerOperation` to create an automatic trigger for updating the ``fts_index``::
 
     CreateFTSTriggerOperation(
         name='Article',
