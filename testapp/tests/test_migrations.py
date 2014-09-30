@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from django.db import connection, models, connections, DEFAULT_DB_ALIAS
+from django.db import connection
 from pg_fts.introspection import PgFTSIntrospection
 from django.test import (override_settings, override_system_checks,
                          TestCase, TransactionTestCase)
 from django.utils import six
 from django.core.management import call_command
+
+try:
+    from django.db.backends import TableInfo
+    table_info = True
+except:
+    table_info = False
 
 __all__ = ('FTSTestBase', 'CreateOperationTestSQL',
            'TransactionsMigrationsTest')
@@ -46,11 +52,16 @@ class FTSTestBase(TransactionTestCase):
                              self.introspection.get_functions_list(cursor))
 
     def assertTableExists(self, table):
+        if table_info:
+            table = TableInfo(name=table, type='t')
         with connection.cursor() as cursor:
             self.assertIn(table,
                           connection.introspection.get_table_list(cursor))
 
     def assertTableNotExists(self, table):
+        if table_info:
+            table = TableInfo(name=table, type='t')
+
         with connection.cursor() as cursor:
             self.assertNotIn(table,
                              connection.introspection.get_table_list(cursor))
