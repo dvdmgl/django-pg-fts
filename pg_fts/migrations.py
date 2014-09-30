@@ -5,7 +5,8 @@ from pg_fts.fields import TSVectorField
 
 
 __all__ = ('CreateFTSIndexOperation', 'CreateFTSTriggerOperation',
-           'DeleteFTSIndexOperation', 'DeleteFTSTriggerOperation')
+           'DeleteFTSIndexOperation', 'DeleteFTSTriggerOperation',
+           'UpdateVectorOperation')
 
 """
     pg_fts.migrations
@@ -88,7 +89,7 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
 
         try:
             dict_field = model._meta.get_field_by_name(vector_field.dictionary)[0]
-            dictionary = "NEW.%s::regconfig" % (
+            dictionary = "%s::regconfig" % (
                 dict_field.get_attname_column()[1])
         except:
             dictionary = "'%s'" % vector_field.dictionary

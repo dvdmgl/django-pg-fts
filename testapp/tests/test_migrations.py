@@ -75,6 +75,9 @@ class CreateOperationTestSQL(TestCase):
         stdout = six.StringIO()
         call_command('sqlmigrate', 'testapp', '0002', stdout=stdout)
         self.assertIn('"tsvector" tsvector null', stdout.getvalue().lower())
+        self.assertIn(
+            "UPDATE testapp_tsvectormodel SET tsvector = setweight(to_tsvector('english', COALESCE(title, '')), 'D') || setweight(to_tsvector('english', COALESCE(body, '')), 'D');",
+            stdout.getvalue())
 
     @override_system_checks([])
     @override_settings(MIGRATION_MODULES={"testapp": "testapp.migrations_index"})
@@ -118,12 +121,21 @@ FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();""",
         stdout = six.StringIO()
         call_command('sqlmigrate', 'testapp', '0002', stdout=stdout)
         self.assertIn('"tsvector" tsvector null', stdout.getvalue().lower())
+        self.assertIn(
+            "UPDATE testapp_tsvectormodel SET tsvector = setweight(to_tsvector(dictionary::regconfig, COALESCE(title, '')), 'D') || setweight(to_tsvector(dictionary::regconfig, COALESCE(body, '')), 'D');",
+            stdout.getvalue())
+
 
     @override_system_checks([])
     @override_settings(MIGRATION_MODULES={"testapp": "testapp.migrations_multidict"})
     def test_sql_fts_index_multi(self):
         stdout = six.StringIO()
+
         call_command('sqlmigrate', 'testapp', '0003', stdout=stdout)
+        self.assertIn(
+            ('CREATE INDEX testapp_tsvectormodel_tsvector ON '
+             'testapp_tsvectormodel USING gin(tsvector);'),
+            stdout.getvalue())
         self.assertIn(
             ('CREATE INDEX testapp_tsvectormodel_tsvector ON '
              'testapp_tsvectormodel USING gin(tsvector);'),

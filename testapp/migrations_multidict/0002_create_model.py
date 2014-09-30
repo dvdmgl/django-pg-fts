@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import pg_fts.fields
+from pg_fts.migrations import UpdateVectorOperation
 
 
 class Migration(migrations.Migration):
@@ -31,6 +32,8 @@ class Migration(migrations.Migration):
             },
             bases=(models.Model,),
         ),
-
-
+        UpdateVectorOperation(
+            name='TSVectorModel',
+            fts_vector='tsvector'
+        ),
     ]

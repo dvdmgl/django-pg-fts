@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-from pg_fts.migrations import CreateFTSIndexOperation, CreateFTSTriggerOperation
+from pg_fts.migrations import CreateFTSIndexOperation
 
 
 class Migration(migrations.Migration):
