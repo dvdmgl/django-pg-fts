@@ -43,6 +43,8 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
 
     sql_delete_index = 'DROP INDEX {model}_{fts_name}'
 
+    sql_update_vector = 'UPDATE {model} SET {vector} = {fields}'
+
     def delete_trigger(self, model, field):
         return self.sql_delete_trigger.format(
             model=model._meta.db_table,
@@ -77,6 +79,30 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
             vectors=' || '.join(vectors)
         )
 
+    def update_vector(self, model, vector_field):
+        vectors = []
+        sql_fn = "setweight(to_tsvector(%s, COALESCE(%s, '')), '%s')"
+
+        if not isinstance(vector_field, TSVectorField):
+            raise AttributeError
+
+        try:
+            dict_field = model._meta.get_field_by_name(vector_field.dictionary)[0]
+            dictionary = "NEW.%s::regconfig" % (
+                dict_field.get_attname_column()[1])
+        except:
+            dictionary = "'%s'" % vector_field.dictionary
+
+        for field, rank in vector_field._get_fields_and_ranks():
+            vectors.append(sql_fn % (
+                dictionary, field.get_attname_column()[1], rank))
+
+        return self.sql_update_vector.format(
+            model=model._meta.db_table,
+            vector=vector_field.get_attname_column()[1],
+            fields=' || '.join(vectors)
+        )
+
     def _get_vector_for_field(self, field, weight, dictionary):
         return "setweight(to_tsvector(%s, COALESCE(NEW.%s, '')), '%s')" % (
             dictionary, field.get_attname_column()[1], weight
@@ -93,6 +119,43 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
         return self.sql_delete_index.format(
             model=model._meta.db_table,
             fts_name=vector_field.get_attname_column()[1]
+        )
+
+
+class UpdateVectorOperation(Operation):
+    reduces_to_sql = True
+    reversible = True
+    sql_creator = PgFtsSQL()
+
+    def __init__(self, name, fts_vector):
+        self.name = name
+        self.fts_vector = fts_vector
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def database_forwards(self, app_label, schema_editor, from_state,
+                          to_state):
+
+        model = from_state.render().get_model(app_label, self.name)
+        vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
+        # sql = self.sql_creator.update_vector(
+        #     model,
+        #     vector_field
+        # )
+        # print(sql)
+        schema_editor.execute(self.sql_creator.update_vector(
+            model,
+            vector_field
+        ))
+
+    def database_backwards(self, app_label, schema_editor, from_state,
+                           to_state):
+        pass
+
+    def describe(self):
+        return "Create trigger `%s` for model `%s`" % (
+            self.fts_vector, self.name
         )
 
 
