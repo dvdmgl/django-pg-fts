@@ -34,9 +34,11 @@ For a existing model::
 You want to have full text search in fields title and article, and make give weight to title of 'A'.
 
 import TSVectorField::
+
     from pg_fts.fields import TSVectorField
 
 add to existing model::
+
     fts = TSVectorField(fields=(('title', 'A'), 'article'), dictionary='english')
 
 run makemigrations::
