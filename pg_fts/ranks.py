@@ -17,14 +17,15 @@ class AggregateRegister(aggregates.Aggregate):
     """
     is_ordinal = False
     is_computed = True
-    sql_template = ("%(function)s(%(field_name)s, to_tsquery('%(dictionary)s',"
+    sql_template = ("%(function)s(%(weights)s%(field_name)s, to_tsquery('%(dictionary)s',"
                     " %(place)s)%(normalization)s)")
 
     def __init__(self, col, source=None, sql_function=None, **extra):
         self.col, self.source, self.sql_function = col, source, sql_function
         self.extra, self.field = extra, FloatField()
         self.params = self.extra['params']
-        self.normalization = self.extra['normalization_arr']
+        self.normalization = self.extra['_normalization']
+        self.weights = self.extra['_weights']
 
     def as_sql(self, qn, connection):
         field_name = '.'.join(qn(c) for c in self.col)
@@ -33,11 +34,19 @@ class AggregateRegister(aggregates.Aggregate):
                 '%d' % i for i in self.normalization)
         else:
             normalization_params = ''
+
+        if self.weights:
+            weights_params = "'{" + ', '.join(
+                '%.1f' % i for i in self.weights) + "}', "
+        else:
+            weights_params = ''
+
         substitutions = {
             'field_name': '.'.join(qn(c) for c in self.col),
             'function': self.sql_function,
             'place': '%s',
-            'normalization': normalization_params
+            'normalization': normalization_params,
+            'weights': weights_params
         }
         substitutions.update(self.extra)
         return self.sql_template % substitutions, [self.params]
@@ -68,7 +77,8 @@ class Aggregate(object):
         self.extra = {
             'params': params,
             'dictionary': self.dictionary,
-            'normalization_arr': self.normalization
+            '_normalization': self.normalization,
+            '_weights': self.weights
         }
 
         query.add_extra(
@@ -118,6 +128,8 @@ class FTSRank(Aggregate):
 
     :param normalization: iterable integer
 
+    :param weights: iterable float
+
     :returns: rank
     """
 
@@ -127,6 +139,7 @@ class FTSRank(Aggregate):
 
     def __init__(self, **extra):
         self.normalization = extra.pop('normalization', [])
+        self.weights = extra.pop('weights', [])
         assert len(extra) == 1, 'to many arguments for %s' % (
             self.__class__.__name__)
         params = tuple(extra.items())[0]
@@ -209,6 +222,7 @@ class FTSRankDictionay(FTSRank):
 
     def __init__(self, **extra):
         self.normalization = extra.pop('normalization', [])
+        self.weights = extra.pop('weights', [])
         assert len(extra) == 1, 'to many arguments for %s' % (
             self.__class__.__name__)
         params = tuple(extra.items())[0]

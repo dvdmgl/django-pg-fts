@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 from django.test import TestCase
 from testapp.models import TSQueryModel, Related, TSMultidicModel
-from pg_fts.aggregates import (FTSRank, FTSRankDictionay, FTSRankCd,
-                               FTSRankCdDictionary)
+from pg_fts.ranks import (FTSRank, FTSRankDictionay, FTSRankCd,
+                          FTSRankCdDictionary)
 from django.core import exceptions
 
 __all__ = ('AnnotateTestCase', 'FTSRankDictionayTestCase')
@@ -104,6 +104,20 @@ salvão save o the planeta planet"""
             rank=FTSRank(tsvector__tsquery='para & mesmo', normalization=[32, 8]))
         self.assertIn('''ts_rank("testapp_tsquerymodel"."tsvector", to_tsquery('english', para & mesmo), 32|8) AS "rank"''',
                       str(qs.query))
+        self.assertEqual(len(qs), 2)
+
+    def test_weights(self):
+        qs = TSQueryModel.objects.annotate(
+            rank=FTSRank(
+                tsvector__tsquery='para & mesmo',
+                normalization=(32, 8),
+                weights=(0.1, 0.2, 0.4, 1.0)
+            )
+        )
+
+        self.assertIn('''ts_rank('{0.1, 0.2, 0.4, 1.0}', "testapp_tsquerymodel"."tsvector", to_tsquery('english', para & mesmo), 32|8) AS "rank"''',
+                      str(qs.query))
+
         self.assertEqual(len(qs), 2)
 
     def test_ts_rank_cd_search(self):

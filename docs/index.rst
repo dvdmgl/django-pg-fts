@@ -6,18 +6,18 @@
 Welcome to django-pg-fts's documentation!
 =========================================
 
-Implementation PostgeSQL for Full Text Search for Django 1.7, taking advantage of new features Migrations and Custom Lookups
+Implementation PostgeSQL for Full Text Search for Django 1.7, taking advantage of new features Migrations and Custom Lookups.
 
 Features:
 ---------
 
 - FieldLookup's search, isearch, tsquery
 
-- Annotations (fake aggregates) for Ranking results with normalization
+- Ranking support with normalization, and weights using annotations
 
 - Migrations classes to help create and remove index's, support for 'gin' or 'gist'
 
-- Migrations classes to help create and remove of trigger's for updating and inserting
+- Migrations classes to help create and remove of trigger's
 
 - Multiple dictionaries support with trigger and FieldLookup's
 

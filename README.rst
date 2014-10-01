@@ -9,7 +9,7 @@ Features:
 
 - FieldLookup's search, isearch, tsquery
 
-- Ranking support with annotations results with normalization
+- Ranking support with normalization, and weights using annotations
 
 - Migrations classes to help create and remove index's, support for 'gin' or 'gist'
 
@@ -107,16 +107,16 @@ Will result in sql something like:
 
 And also rank the results with normalization and order:
 
->>> from pg_fts.aggregates import FTSRank
+>>> from pg_fts.ranks import FTSRank
 >>> Article.objects.filter(
     rank=FTSRank(fts_search='waz up', normalization=[1,3])).order_by('-rank')
 
-For multiple dictionaries and more advanced options, check the documentation.
+For multiple dictionaries and more advanced options, check the `documentation <http://django-pg-fts.readthedocs.org/>`_.
 
 Documentation
 -------------
 
-Documentation available in `Read The Docs <http://django-pg-fts.readthedocs.org/>`_
+Documentation available in `Read The Docs django-pg-fts.readthedocs.org <http://django-pg-fts.readthedocs.org/>`_
 
 Installation
 ------------

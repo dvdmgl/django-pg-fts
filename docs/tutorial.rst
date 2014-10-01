@@ -200,9 +200,9 @@ Ranking results
 
 To rank results :pg_docs:`12.3.3. Ranking Search Results <textsearch-controls.html#TEXTSEARCH-RANKING>` let's use django annotate.
 
-For this lets use :class:`~pg_fts.aggregates.FTSRank`, :class:`~pg_fts.aggregates.FTSRankCd`
+For this lets use :class:`~pg_fts.ranks.FTSRank`, :class:`~pg_fts.ranks.FTSRankCd`
 
->>> from pg_fts.aggregates import FTSRank, FTSRankCd
+>>> from pg_fts.ranks import FTSRank, FTSRankCd
 >>> ranks = Article.objects.annotate(rank=FTSRank(fts_index__isearch='templates awesome')).order_by('-rank')
 >>> ranks
 [<Article: Django>, <Article: Python>, <Article: Wordpress>]
@@ -337,7 +337,7 @@ For Portuguese search::
 Ranking results
 ...............
 
-To rank results in case of multiple dictionaries, use the appropriate :class:`~pg_fts.aggregates.FTSRankDictionary`, :class:`~pg_fts.aggregates.FTSRankCdDictionary`
+To rank results in case of multiple dictionaries, use the appropriate :class:`~pg_fts.ranks.FTSRankDictionary`, :class:`~pg_fts.ranks.FTSRankCdDictionary`
 
 Works like the Single Dictionary but with Multiple lookups
 
