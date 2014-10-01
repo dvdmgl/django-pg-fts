@@ -33,23 +33,24 @@ For a existing model::
 
 You want to have full text search in fields title and article, and make give weight to title of 'A'.
 
-import TSVectorField::
+Import TSVectorField::
 
     from pg_fts.fields import TSVectorField
 
-add to existing model::
+Add to existing TSVectorField to model and tell the fields that you want to index and the dictionary::
 
     fts = TSVectorField(fields=(('title', 'A'), 'article'), dictionary='english')
 
-run makemigrations::
+Create migrations file::
     
     python manage.py makemigrations article
 
-open the new created migration and import CreateFTSIndexOperation, CreateFTSTriggerOperation, UpdateVectorOperation::
+Open the new created migration and import CreateFTSIndexOperation, CreateFTSTriggerOperation, UpdateVectorOperation::
 
-    from pg_fts.migrations import CreateFTSIndexOperation, CreateFTSTriggerOperation, UpdateVectorOperation
+    from pg_fts.migrations import (CreateFTSIndexOperation, CreateFTSTriggerOperation,
+                                   UpdateVectorOperation)
 
-edit the makemigrations file created and add to the end of operations::
+And add to the end of operations::
 
     # update vector for already existing data
     UpdateVectorOperation(
@@ -68,7 +69,7 @@ edit the makemigrations file created and add to the end of operations::
         index='gin'
     )
 
-run migrate::
+Make the changes to your database::
 
     python manage.py migrate article
 
@@ -78,7 +79,7 @@ You can search will match all words:
 
 >>> Article.objects.filter(fts_search='waz up')
 
-As will result in something like sql:
+Will result in sql something like:
 
 .. code-block:: sql
 
@@ -88,28 +89,29 @@ Or isearch will match some words:
 
 >>> Article.objects.filter(fts_isearch='waz up')
 
-As will result in something like sql:
+Will result in sql something like:
 
 .. code-block:: sql
 
     tsvector @@ to_tsquery('english', 'waz | up')
 
-Or tsquery will to make raw tsquery:
+But you can make a raw tsquery:
 
 >>> Article.objects.filter(fts_tsquery='waz & !up')
 
-As will result in something like sql:
+Will result in sql something like:
 
 .. code-block:: sql
 
     tsvector @@ to_tsquery('english', 'waz & !up')
 
-And also rank the results with normalization:
+And also rank the results with normalization and order:
 
 >>> from pg_fts.aggregates import FTSRank
->>> Article.objects.filter(rank=FTSRank(fts_search='waz up'), normalizing=[1,3]).order_by('-rank')
+>>> Article.objects.filter(
+    rank=FTSRank(fts_search='waz up', normalization=[1,3])).order_by('-rank')
 
-Multiple dictionaries also are supported, check the documentation.
+For multiple dictionaries and more advanced options, check the documentation.
 
 Documentation
 -------------
