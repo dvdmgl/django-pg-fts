@@ -140,6 +140,24 @@ salvão save o the planeta planet"""
             )
             list(qs)
 
+    # need to find a way to catch FieldError raised by
+    # django.db.models.sql.query in add fields
+    #
+    def test_transform_dictionary_exception(self):
+        with self.assertRaises(exceptions.FieldError) as msg:
+            TSQueryModel.objects.annotate(
+                rank=FTSRank(tsvector__nodict='malucos')),
+        self.assertEqual(
+            str(msg.exception),
+            "The 'nodict' isn't valid Lookup for FTSRank")
+
+        with self.assertRaises(exceptions.FieldError) as msg:
+            TSQueryModel.objects.annotate(
+                rank=FTSRank(tsvector='malucos')),
+        self.assertEqual(
+            str(msg.exception),
+            "The 'tsvector' isn't valid Lookup for FTSRank")
+
     def test_ts_rank_cd_search(self):
         q = TSQueryModel.objects.annotate(
             rank=FTSRankCd(tsvector__search='para mesmo')
@@ -268,21 +286,18 @@ salvão save o the planeta planet"""
         self.assertIn('''ts_rank_cd("testapp_tsmultidicmodel"."tsvector", to_tsquery('portuguese', para & os)) AS "rank"''',
                       str(qn_pt.query))
 
-    # need to find a way to catch FieldError raised by
-    # django.db.models.sql.query in add fields
-    #
-    # def test_transform_dictionary_exception(self):
-    #     with self.assertRaises(exceptions.FieldError) as msg:
-    #         TSMultidicModel.objects.annotate(
-    #             rank=FTSRankDictionay(tsvector__nodict='malucos')),
-    #     self.assertEqual(
-    #         str(msg.exception),
-    #         "The 'nodict' is not in testapp.TSMultidicModel.dictionary choices")
+    def test_transform_dictionary_exception(self):
+        with self.assertRaises(exceptions.FieldError) as msg:
+            TSMultidicModel.objects.annotate(
+                rank=FTSRankDictionay(tsvector__nodict='malucos')),
+        self.assertEqual(
+            str(msg.exception),
+            "The 'nodict' isn't valid Lookup for FTSRankDictionay")
 
-    # def test_transform_exception(self):
-    #     with self.assertRaises(exceptions.FieldError) as msg:
-    #         list(TSMultidicModel.objects.annotate(
-    #             rank=FTSRankDictionay(tsvector__portuguese='malucos')))
-    #     self.assertEqual(
-    #         str(msg.exception),
-    #         "'exact' isn't valid Lookup for TSVectorBaseField")
+    def test_transform_exception(self):
+        with self.assertRaises(exceptions.FieldError) as msg:
+            list(TSMultidicModel.objects.annotate(
+                rank=FTSRankDictionay(tsvector__portuguese='malucos')))
+        self.assertEqual(
+            str(msg.exception),
+            "The 'portuguese' isn't valid Lookup for FTSRankDictionay")

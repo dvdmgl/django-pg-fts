@@ -125,7 +125,6 @@ FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();""",
             "UPDATE testapp_tsvectormodel SET tsvector = setweight(to_tsvector(dictionary::regconfig, COALESCE(title, '')), 'D') || setweight(to_tsvector(dictionary::regconfig, COALESCE(body, '')), 'D');",
             stdout.getvalue())
 
-
     @override_system_checks([])
     @override_settings(MIGRATION_MODULES={"testapp": "testapp.migrations_multidict"})
     def test_sql_fts_index_multi(self):

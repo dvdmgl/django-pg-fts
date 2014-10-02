@@ -39,7 +39,7 @@ class TSVectorBaseField(Field):
     :raises: exceptions.FieldError if lookup isn't tsquery, search or isearch
 
     """
-
+    valid_lookups = ('search', 'isearch', 'tsquery')
     empty_strings_allowed = True
 
     def __init__(self, dictionary='english', **kwargs):
@@ -58,7 +58,7 @@ class TSVectorBaseField(Field):
     def get_db_prep_lookup(self, lookup_type, value, connection,
                            prepared=False):
 
-        if lookup_type not in ('search', 'isearch', 'tsquery'):
+        if lookup_type not in self.valid_lookups:
             raise exceptions.FieldError("'%s' isn't valid Lookup for %s" % (
                 lookup_type, self.__class__.__name__))
 

@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 from django.db.models.fields import FloatField
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql import aggregates
+from django.core import exceptions
+from pg_fts.fields import TSVectorBaseField
 
 __all__ = ('FTSRankCd', 'FTSRank', 'FTSRankDictionay', 'FTSRankCdDictionary')
 
@@ -52,7 +54,7 @@ class AggregateRegister(aggregates.Aggregate):
         return self.sql_template % substitutions, [self.params]
 
 
-class Aggregate(object):
+class RankBase(object):
     NORMALIZATION = (0, 1, 2, 4, 8, 16, 32)
     sql_function, rhs, dictionary, srt_lookup = '', '', '', ''
 
@@ -114,9 +116,13 @@ class Aggregate(object):
             ', '.join('%d' % i for i in self.NORMALIZATION))
         assert len(self.extra) == 1, 'to many arguments for %s' % (
             self.__class__.__name__)
+        if self.srt_lookup not in TSVectorBaseField.valid_lookups:
+            raise exceptions.FieldError(
+                "The '%s' isn't valid Lookup for %s" % (
+                    self.srt_lookup, self.__class__.__name__))
 
 
-class FTSRank(Aggregate):
+class FTSRank(RankBase):
     """
     Interface for PostgreSQL ts_rank
 
@@ -146,6 +152,9 @@ class FTSRank(Aggregate):
     :param weights: iterable float
 
     :returns: rank
+
+    :raises: exceptions.FieldError if lookup isn't valid
+
     """
 
     name = 'FTSRank'
@@ -157,10 +166,10 @@ class FTSRank(Aggregate):
         self.weights = extra.pop('weights', [])
         params = tuple(extra.items())[0]
         self.extra = extra
-        self._do_checks()
         lookups, self.rhs = params[0].split(LOOKUP_SEP), params[1]
         self.srt_lookup = lookups[-1]
         self.lookup = LOOKUP_SEP.join(lookups[:-1])
+        self._do_checks()
 
 
 class FTSRankCd(FTSRank):
@@ -179,6 +188,8 @@ class FTSRankCd(FTSRank):
         values
 
     :returns: rank_cd
+
+    :raises: exceptions.FieldError if lookup isn't valid
 
     Example::
 
@@ -216,6 +227,8 @@ class FTSRankDictionay(FTSRank):
 
     :returns: rank
 
+    :raises: exceptions.FieldError if lookup isn't valid
+
     Example::
 
         Article.objects.annotate(
@@ -239,10 +252,10 @@ class FTSRankDictionay(FTSRank):
         self.weights = extra.pop('weights', [])
         params = tuple(extra.items())[0]
         self.extra, self.rhs = extra, params[1]
-        self._do_checks()
         lookups = params[0].split(LOOKUP_SEP)
         self.dictionary, self.srt_lookup = lookups[-2:]
         self.lookup = LOOKUP_SEP.join(lookups[:-2])
+        self._do_checks()
 
 
 class FTSRankCdDictionary(FTSRankDictionay):
@@ -259,6 +272,8 @@ class FTSRankCdDictionary(FTSRankDictionay):
         values
 
     :returns: rank_cd
+
+    :raises: exceptions.FieldError if lookup isn't valid
 
     Example::
 
