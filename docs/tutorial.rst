@@ -14,7 +14,7 @@ Create a new project like ``fooproject`` and ``article`` app::
 
 **Add ``pg_fts`` To ``INSTALLED_APPS``**
 
-As with most Django applications, you should add ``pg_fts`` to the ``INSTALLED_APPS`` in your ``settings.py`` file::
+As with most django applications, you should add ``pg_fts`` to the ``INSTALLED_APPS`` in your ``settings.py`` file::
 
     INSTALLED_APPS = (
         'django.contrib.auth',
@@ -173,26 +173,26 @@ With ``python manage.py shell``::
     >>> from testapp.models import Article
     >>> Article.objects.create(title='PHP', article='what a pain, the worst of c, c++, perl all mixed in one stupid thing')
     >>> Article.objects.create(title='Python', article='is awesome')
-    >>> Article.objects.create(title='Django', article='is awesome, made in python, multiple databases support, it has a ORM, class based views, template layer')
+    >>> Article.objects.create(title='django', article='is awesome, made in python, multiple databases support, it has a ORM, class based views, template layer')
     >>> Article.objects.create(title='Wordpress', article="what a pain, made in PHP, it's ok if you just add a template and some plugins")
     >>> Article.objects.create(title='Javascript', article='A functional language, with c syntax. The braces nightmare')
     >>> Article.objects.filter(fts_index__search='django')
-    [<Article: Django>]
+    [<Article: django>]
     >>> Article.objects.filter(fts_index__search='Python')
-    [<Article: Python>, <Article: Django>]
+    [<Article: Python>, <Article: django>]
     >>> Article.objects.filter(fts_index__search='templates')
-    [<Article: Wordpress>, <Article: Django>]
+    [<Article: Wordpress>, <Article: django>]
     # postgress & and
     search = Article.objects.filter(fts_index__search='templates awesome')
     >>> print(search.query)
     SELECT "article_article"."id", "article_article"."title", "article_article"."article", "article_article"."fts_index" FROM "article_article" WHERE "article_article"."fts_index" @@ to_tsquery('portuguese', templates & awesome)
     print(search)
-    [<Article: Django>] # only django has template language AND is awesome
+    [<Article: django>] # only django has template language AND is awesome
     isearch = Article.objects.filter(fts_index__isearch='templates awesome')
     >>> print(isearch.query)
     SELECT "article_article"."id", "article_article"."title", "article_article"."article", "article_article"."fts_index" FROM "article_article" WHERE "article_article"."fts_index" @@ to_tsquery('portuguese', templates | awesome)
     print(isearch)
-    [<Article: Python>, <Article: Wordpress>, <Article: Django>]
+    [<Article: Python>, <Article: Wordpress>, <Article: django>]
     # wordpress oh no and in 2nd position, let's rank the results
 
 Ranking results
@@ -205,16 +205,16 @@ For this lets use :class:`~pg_fts.ranks.FTSRank`, :class:`~pg_fts.ranks.FTSRankC
 >>> from pg_fts.ranks import FTSRank, FTSRankCd
 >>> ranks = Article.objects.annotate(rank=FTSRank(fts_index__isearch='templates awesome')).order_by('-rank')
 >>> ranks
-[<Article: Django>, <Article: Python>, <Article: Wordpress>]
+[<Article: django>, <Article: Python>, <Article: Wordpress>]
 # that's better, wordpress has templates, but it's not awesome, but let's check ranks
 >>> [(r.title, r.rank) for r in ranks]
-[('Django', 0.0607927), ('Python', 0.0303964), ('Wordpress', 0.0303964)]
+[('django', 0.0607927), ('Python', 0.0303964), ('Wordpress', 0.0303964)]
 # lucky for python appear before wordpress, let's normalize the results
 >>> ranks_cd = Article.objects.annotate(rank=FTSRankCd(fts_index__isearch='awesome templates', normalization=[16|32])).order_by('-rank')
 >>> [(r.title, r.rank) for r in ranks_cd]
-[('Python', 0.047619), ('Django', 0.0457674), ('Wordpress', 0.0234196)]
+[('Python', 0.047619), ('django', 0.0457674), ('Wordpress', 0.0234196)]
 
-Python and Django are awesome, check the postgres documentation for more about normalization
+Python and django are awesome, check the postgres documentation for more about normalization
 
 Multiple dictionary example
 ---------------------------
@@ -315,13 +315,13 @@ For Portuguese search::
 
 >>> ArticleMulti.objects.create(title='PHP', article='what a pain, the worst of c, c++, perl all mixed in one stupid thing', dictionary='english')
 >>> ArticleMulti.objects.create(title='Python', article='is awesome', dictionary='english')
->>> ArticleMulti.objects.create(title='Django', article='is awesome, made in python', dictionary='english')
+>>> ArticleMulti.objects.create(title='django', article='is awesome, made in python', dictionary='english')
 >>> ArticleMulti.objects.create(title='Wordpress', article="what a pain, made in PHP, it's ok if you just add a template and some plugins")
 >>> ArticleMulti.objects.create(title='Javascript', article='A functional dictionary, with c syntax. The braces nightmare', dictionary='english')
 ## Portuguese
 >>> ArticleMulti.objects.create(title='PHP', article='que dor, o pior do c, c++ e perl tudo junto para ser a coisa mais estupida', dictionary='portuguese')
 >>> ArticleMulti.objects.create(title='Python', article='é Brutal', dictionary='portuguese')
->>> ArticleMulti.objects.create(title='Django', article='é Altamente, feito em python', dictionary='portuguese')
+>>> ArticleMulti.objects.create(title='django', article='é Altamente, feito em python', dictionary='portuguese')
 >>> ArticleMulti.objects.create(title='Wordpress', article="que dor, feito em PHP, não é mau para quem usa os templates e plugins")
 >>> ArticleMulti.objects.create(title='Javascript', article='Uma linguagem funcional, mas tem sintaxe c para confundir. O pesadelo das chavetas', dictionary='portuguese')
 >>> django_pt = ArticleMulti.objects.filter(fts_index__portuguese__search='django', dictionary='portuguese')
@@ -360,8 +360,8 @@ reverse migration to 0001 so does not include ArticleMulti::
 Delete the 0002 migration, remove ArticleMulti from models.py and add / change Article to::
 
     class Article(models.Model):
-    title = models.CharField(max_length=255)
-    article = models.TextField()
+        title = models.CharField(max_length=255)
+        article = models.TextField()
 
     dictionary = models.CharField(
         max_length=15,
@@ -377,11 +377,11 @@ Delete the 0002 migration, remove ArticleMulti from models.py and add / change A
     def __str__(self):
         return self.title
 
-Let Django find the model alterations for us::
+Let django find the model alterations for us::
 
     python manage.py makemigrations article
 
-But we have to edit the migrations 0002 file before applying and add to operations :class:`~pg_fts.migrations.DeleteFTSTriggerOperation` and :class:`~pg_fts.migrations.DeleteFTSIndexOperation` **before** Django auto migrations, and **at the end** of operations the :class:`~pg_fts.migrations.CreateFTSIndexOperation` and :class:`~pg_fts.migrations.CreateFTSTriggerOperation`.
+But we have to edit the migrations 0002 file before applying and add to operations :class:`~pg_fts.migrations.DeleteFTSTriggerOperation` and :class:`~pg_fts.migrations.DeleteFTSIndexOperation` **before** django auto migrations, and **at the end** of operations the :class:`~pg_fts.migrations.CreateFTSIndexOperation` and :class:`~pg_fts.migrations.CreateFTSTriggerOperation`.
 
 The migrations 0002 file should be like this::
 
@@ -414,7 +414,7 @@ The migrations 0002 file should be like this::
                 fts_vector='fts_index',
                 index='gin'
             ),
-            # the Django created changes
+            # the django created changes
             migrations.AddField(
                 model_name='article',
                 name='dictionary',
@@ -444,8 +444,8 @@ The migrations 0002 file should be like this::
 
     Pay special attention to the order of creation and deleting.
 
-    You can only apply :class:`~pg_fts.migrations.CreateFTSIndexOperation` and :class:`~pg_fts.migrations.CreateFTSTriggerOperation` after Django created operations.
+    You can only apply :class:`~pg_fts.migrations.CreateFTSIndexOperation` and :class:`~pg_fts.migrations.CreateFTSTriggerOperation` after django created operations.
 
-    The :class:`~pg_fts.migrations.DeleteFTSTriggerOperation` and :class:`~pg_fts.migrations.DeleteFTSIndexOperation` before Django removing/altering operations
+    The :class:`~pg_fts.migrations.DeleteFTSTriggerOperation` and :class:`~pg_fts.migrations.DeleteFTSIndexOperation` before django removing/altering operations
 
     Not to forget **USE AT YOUR OWN RISK**

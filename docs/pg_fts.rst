@@ -13,7 +13,14 @@ pg_fts.fields module
 pg_fts.aggregates module
 ------------------------
 
-.. automodule:: pg_fts.aggregates 
+.. note::
+    
+    Deprecated use :mod:`pg_fts.ranks` instead.
+
+pg_fts.ranks module
+------------------------
+
+.. automodule:: pg_fts.ranks 
     :members:
 
 
