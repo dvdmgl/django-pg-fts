@@ -27,11 +27,13 @@ Features:
 Contents:
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    install
    tutorial
    migrations
+   ranks
+   tsvector_field
    pg_fts
 
 

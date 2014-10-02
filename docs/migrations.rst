@@ -4,12 +4,32 @@ Migrations
 
 .. important::
 
-    If you're not familiar with django Migrations, please check `Migrations Documentation <https://docs.djangoproject.com/en/1.7/topics/migrations/>`_ 1st.
+    If you're not familiar with django Migrations, please check `django Migrations Documentation <https://docs.djangoproject.com/en/1.7/topics/migrations/>`_ 1st.
 
 
 .. important::
 
     The order of Migrations.operations matters, you can only apply a index to a field if a field exists, if you delete a model/field you should remove any operation first before removing model/field.
+
+
+BaseVectorOperation options
+***************************
+
+The following arguments are available to all FTSMigration types
+
+``name``
+--------
+
+.. attribute:: CreateFTSTriggerOperation.name
+
+Name of the model
+
+``fts_vector``
+--------------
+
+.. attribute:: CreateFTSTriggerOperation.fts_vector
+
+Name of the :class:`~pg_fts.fields.TSVectorField`
 
 
 Creating
@@ -20,17 +40,10 @@ Trigger
 
 For creating of trigger is provided :class:`~pg_fts.migrations.CreateFTSTriggerOperation`.
 
-``name``
+``CreateFTSTriggerOperation``
+-----------------------------
 
-.. attribute:: CreateFTSTriggerOperation.name
-
-Name of the model
-
-``fts_vector``
-
-.. attribute:: CreateFTSTriggerOperation.fts_vector
-
-Name of the :class:`~pg_fts.fields.TSVectorField`
+.. class:: CreateFTSTriggerOperation(options**)
 
 How it works
 ++++++++++++
@@ -91,20 +104,9 @@ Index
 
 For creating of indexes is provided :class:`~pg_fts.migrations.CreateFTSIndexOperation`.
 
-``name``
-
-.. attribute:: CreateFTSIndexOperation.name
-
-Name of the model
-
-``fts_vector``
-
-.. attribute:: CreateFTSIndexOperation.fts_vector
-
-Name of the :class:`~pg_fts.fields.TSVectorField`
-
 
 ``index``
+---------
 
 .. attribute:: CreateFTSIndexOperation.index
 
@@ -116,24 +118,26 @@ Options:
 
 For information about the ``gin`` and ``gist`` indexes types consult :pg_docs:`PostgreSQL documentation 12.9. GiST and GIN Index Types <textsearch-indexes.html>`
 
+Example::
+
+    class Migration(migrations.Migration)
+        dependencies = [
+            ('article', '0003_fts_create_field'),
+        ]
+
+        operations = [
+            CreateFTSIndexOperation(
+                name='Article',
+                fts_vector='fts_index',
+                index='gin'
+            ),
+        ]
+
 
 Migrating from existing application
 -----------------------------------
 
 For existing application with data is provided :class:`~pg_fts.migrations.UpdateVectorOperation`, this will update the vector.
-
-``name``
-
-.. attribute:: UpdateVectorOperation.name
-
-Name of the model
-
-``fts_vector``
-
-.. attribute:: UpdateVectorOperation.fts_vector
-
-Name of the :class:`~pg_fts.fields.TSVectorField`
-
 
 Changing and Removing
 ---------------------
@@ -184,38 +188,15 @@ Removing Index
 
 For removing the index is provided :class:`~pg_fts.migrations.DeleteFTSIndexOperation`.
 
-``name``
-
-.. attribute:: DeleteFTSIndexOperation.name
-
-Name of the model
-
-``fts_vector``
-
-.. attribute:: DeleteFTSIndexOperation.fts_vector
-
-Name of the :class:`~pg_fts.fields.TSVectorField`
-
-The previous index type, important for regressions.
 
 ``index``
+---------
 
 .. attribute:: CreateFTSIndexOperation.index 
 
+The previous index type, important for regressions.
 
 Removing Trigger
 ****************
 
 For removing the index is provided :class:`~pg_fts.migrations.DeleteFTSTriggerOperation`.
-
-``name``
-
-.. attribute:: DeleteFTSTriggerOperation.name
-
-Name of the model
-
-``fts_vector``
-
-.. attribute:: DeleteFTSTriggerOperation.fts_vector
-
-Name of the :class:`~pg_fts.fields.TSVectorField`
