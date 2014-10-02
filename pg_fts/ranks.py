@@ -53,6 +53,7 @@ class AggregateRegister(aggregates.Aggregate):
 
 
 class Aggregate(object):
+    NORMALIZATION = (0, 1, 2, 4, 8, 16, 32)
     sql_function, rhs, dictionary, srt_lookup = '', '', '', ''
 
     def __init__(self, lookup, **extra):
@@ -100,6 +101,20 @@ class Aggregate(object):
         if col not in query.group_by:
             query.group_by.append(col)
 
+    def _do_checks(self):
+        assert not self.weights or (len(self.weights) is 4 and all(map(
+            lambda x: isinstance(x, (int, float)),
+            self.weights
+        ))), 'weights must be of length 4 and type float or integer'
+
+        assert not self.normalization or all(map(
+            lambda x: (isinstance(x, int) and x in self.NORMALIZATION),
+            self.normalization
+        )), 'normalization must be in (%s)' % (
+            ', '.join('%d' % i for i in self.NORMALIZATION))
+        assert len(self.extra) == 1, 'to many arguments for %s' % (
+            self.__class__.__name__)
+
 
 class FTSRank(Aggregate):
     """
@@ -140,12 +155,11 @@ class FTSRank(Aggregate):
     def __init__(self, **extra):
         self.normalization = extra.pop('normalization', [])
         self.weights = extra.pop('weights', [])
-        assert len(extra) == 1, 'to many arguments for %s' % (
-            self.__class__.__name__)
         params = tuple(extra.items())[0]
+        self.extra = extra
+        self._do_checks()
         lookups, self.rhs = params[0].split(LOOKUP_SEP), params[1]
         self.srt_lookup = lookups[-1]
-        self.extra = extra
         self.lookup = LOOKUP_SEP.join(lookups[:-1])
 
 
@@ -223,10 +237,9 @@ class FTSRankDictionay(FTSRank):
     def __init__(self, **extra):
         self.normalization = extra.pop('normalization', [])
         self.weights = extra.pop('weights', [])
-        assert len(extra) == 1, 'to many arguments for %s' % (
-            self.__class__.__name__)
         params = tuple(extra.items())[0]
         self.extra, self.rhs = extra, params[1]
+        self._do_checks()
         lookups = params[0].split(LOOKUP_SEP)
         self.dictionary, self.srt_lookup = lookups[-2:]
         self.lookup = LOOKUP_SEP.join(lookups[:-2])

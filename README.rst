@@ -2,7 +2,7 @@
 django-pg-fts
 =============
 
-Implementation PostgeSQL for Full Text Search for Django 1.7, taking advantage of new features Migrations and Custom Lookups.
+Implementation PostgeSQL for Full Text Search for django 1.7, taking advantage of new features Migrations and Custom Lookups.
 
 
 Features:
@@ -77,7 +77,7 @@ Now you have a full text search performance with a trigger that checks any chang
 
 You can search will match all words:
 
->>> Article.objects.filter(fts_search='waz up')
+>>> Article.objects.filter(fts__search='waz up')
 
 Will result in sql something like:
 
@@ -87,7 +87,7 @@ Will result in sql something like:
 
 Or isearch will match some words:
 
->>> Article.objects.filter(fts_isearch='waz up')
+>>> Article.objects.filter(fts__isearch='waz up')
 
 Will result in sql something like:
 
@@ -97,7 +97,7 @@ Will result in sql something like:
 
 But you can make a raw tsquery:
 
->>> Article.objects.filter(fts_tsquery='waz & !up')
+>>> Article.objects.filter(fts__tsquery='waz & !up')
 
 Will result in sql something like:
 
