@@ -1,0 +1,9 @@
+include README.rst
+include LICENSE
+include runtests.py
+recursive-include testapp *.py
+recursive-include testapp/migrations *.py
+recursive-include testapp/migrations_index *.py
+recursive-include testapp/migrations_multidict *.py
+recursive-include docs *.py
+recursive-include docs *.rst
