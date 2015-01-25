@@ -31,7 +31,9 @@ BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF {fts_fields} THEN
             new.{fts_name} = {vectors};
-        END IF;
+        ELSE
+            new.{fts_name} = old.{fts_name};
+        END IF; 
     END IF;
 RETURN NEW;
 END;
