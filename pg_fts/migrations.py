@@ -19,7 +19,7 @@ __all__ = ('CreateFTSIndexOperation', 'CreateFTSTriggerOperation',
 
 
 class PgFtsSQL(object):
-    sql_delete_trigger = ("DROP TRIGGER {model}_{fts_name}_update ON \"{model}\";"
+    sql_delete_trigger = ("DROP TRIGGER {model}_{fts_name}_update ON {model};"
                           "DROP FUNCTION {model}_{fts_name}_update()")
 
     sql_create_trigger = """
@@ -38,15 +38,15 @@ BEGIN
 RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
-CREATE TRIGGER {model}_{fts_name}_update BEFORE INSERT OR UPDATE ON \"{model}\"
+CREATE TRIGGER {model}_{fts_name}_update BEFORE INSERT OR UPDATE ON {model}
 FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
 
-    sql_create_index = ("CREATE INDEX {model}_{fts_name} ON \"{model}\" "
+    sql_create_index = ("CREATE INDEX {model}_{fts_name} ON {model} "
                         "USING {fts_index}({fts_name})")
 
     sql_delete_index = 'DROP INDEX {model}_{fts_name}'
 
-    sql_update_vector = 'UPDATE \"{model}\" SET {vector} = {fields}'
+    sql_update_vector = 'UPDATE {model} SET {vector} = {fields}'
 
     def delete_trigger(self, model, field):
         return self.sql_delete_trigger.format(
