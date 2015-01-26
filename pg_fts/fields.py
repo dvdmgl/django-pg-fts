@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db.models import Field, Lookup, Transform
-from django.db.models.lookups import RegisterLookupMixin
 from django.utils import six
 from django.core import checks, exceptions
-from django.utils.translation import string_concat, ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _
 from django.db import models
 import re
 
