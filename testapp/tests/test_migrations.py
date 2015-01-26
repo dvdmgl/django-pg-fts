@@ -94,8 +94,8 @@ class CreateOperationTestSQL(TestCase):
     def test_sql_fts_trigger(self):
         stdout = six.StringIO()
         call_command('sqlmigrate', 'testapp', '0004', stdout=stdout)
-        self.assertIn(
-            """
+        self.assertIn(''.join(
+        """
 CREATE FUNCTION testapp_tsvectormodel_tsvector_update() RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -104,14 +104,17 @@ BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF NEW.title <> OLD.title OR NEW.body <> OLD.body THEN
             new.tsvector = setweight(to_tsvector('english', COALESCE(NEW.title, '')), 'D') || setweight(to_tsvector('english', COALESCE(NEW.body, '')), 'D');
+        ELSE
+            new.tsvector = old.tsvector;
         END IF;
     END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
 CREATE TRIGGER testapp_tsvectormodel_tsvector_update BEFORE INSERT OR UPDATE ON testapp_tsvectormodel
-FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();""",
-            stdout.getvalue()
+FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();
+""".split()),
+            ''.join(stdout.getvalue().split())
         )
 
     # multiple dictionaries
@@ -145,7 +148,7 @@ FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();""",
     def test_sql_fts_trigger_multi(self):
         stdout = six.StringIO()
         call_command('sqlmigrate', 'testapp', '0004', stdout=stdout)
-        self.assertIn(
+        self.assertIn(''.join(
             """
 CREATE FUNCTION testapp_tsvectormodel_tsvector_update() RETURNS TRIGGER AS $$
 BEGIN
@@ -155,14 +158,17 @@ BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF NEW.dictionary <> OLD.dictionary OR NEW.title <> OLD.title OR NEW.body <> OLD.body THEN
             new.tsvector = setweight(to_tsvector(NEW.dictionary::regconfig, COALESCE(NEW.title, '')), 'D') || setweight(to_tsvector(NEW.dictionary::regconfig, COALESCE(NEW.body, '')), 'D');
+        ELSE
+            new.tsvector = old.tsvector;
         END IF;
     END IF;
 RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
 CREATE TRIGGER testapp_tsvectormodel_tsvector_update BEFORE INSERT OR UPDATE ON testapp_tsvectormodel
-FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();""",
-            stdout.getvalue()
+FOR EACH ROW EXECUTE PROCEDURE testapp_tsvectormodel_tsvector_update();
+""".split()),
+            ''.join(stdout.getvalue().split())
         )
 
 

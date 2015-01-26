@@ -84,7 +84,6 @@ salvão save o the planeta planet"""
         self.assertEqual(len(q), 2)
 
 
-
 class TestQueryingMultiDictionary(TestCase):
 
     def setUp(self):
