@@ -52,6 +52,16 @@ salvão save o the planeta planet"""
             2
         )
 
+    def test_5_make_trigger_function_protect_fts_field_against_django_updates(self):
+        q = TSQueryModel.objects.get(id=1)
+        old_tsvector = q.tsvector
+        q.sometext = 'foo'
+        q.save()
+        self.assertEquals(old_tsvector, TSQueryModel.objects.get(id=1).tsvector)
+        q.title = 'bar'
+        q.save()
+        self.assertNotEquals(old_tsvector, TSQueryModel.objects.get(id=1).tsvector)
+
     def test_tsquery(self):
         q = TSQueryModel.objects.filter(tsvector__tsquery='para & mesmo')
         self.assertEqual(
@@ -158,6 +168,17 @@ salvão save o the planeta planet"""
                 dictionary='english'
             )
             ), 1)
+
+    def test_5_multidict_make_trigger_function_protect_fts_field_against_django_updates(self):
+        q = TSMultidicModel.objects.get(id=1)
+        old_tsvector = q.tsvector
+        q.sometext = 'foo'
+        q.save()
+        self.assertEquals(old_tsvector, TSMultidicModel.objects.get(id=1).tsvector)
+        q.title = 'bar'
+        q.save()
+        self.assertNotEquals(old_tsvector, TSMultidicModel.objects.get(id=1).tsvector)
+
 
     def test_related_multidict(self):
         self.assertEqual(len(

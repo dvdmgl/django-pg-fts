@@ -18,6 +18,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(serialize=False, auto_created=True, verbose_name='ID', primary_key=True)),
                 ('title', models.CharField(max_length=50)),
                 ('body', models.TextField()),
+                ('sometext', models.CharField(max_length=50, null=True, blank=True)),
                 ('dictionary', models.CharField(max_length=15, default='english', choices=[('english', 'english'), ('portuguese', 'portuguese')])),
                 ('tsvector', pg_fts.fields.TSVectorField(editable=False, dictionary='dictionary', default='', fields=(('title', 'A'), 'body'), serialize=False, null=True)),
             ],
@@ -31,6 +32,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(serialize=False, auto_created=True, verbose_name='ID', primary_key=True)),
                 ('title', models.CharField(max_length=50)),
                 ('body', models.TextField()),
+                ('sometext', models.CharField(max_length=50, null=True, blank=True)),
                 ('tsvector', pg_fts.fields.TSVectorField(editable=False, dictionary='english', default='', fields=('title', 'body'), serialize=False, null=True)),
             ],
             options={

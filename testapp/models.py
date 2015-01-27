@@ -10,6 +10,7 @@ from django.db import models
 class TSQueryModel(models.Model):
     title = models.CharField(max_length=50)
     body = models.TextField()
+    sometext = models.CharField(max_length=50, null=True, blank=True)
 
     tsvector = TSVectorField(('title', 'body'))
 
@@ -21,6 +22,7 @@ class TSQueryModel(models.Model):
 class TSMultidicModel(models.Model):
     title = models.CharField(max_length=50)
     body = models.TextField()
+    sometext = models.CharField(max_length=50, null=True, blank=True)
     dictionary = models.CharField(
         max_length=15,
         choices=(('english', 'english'), ('portuguese', 'portuguese')),
