@@ -279,7 +279,8 @@ class CreateFTSIndexOperation(BaseVectorOperation):
 
     def database_forwards(self, app_label, schema_editor, from_state,
                           to_state):
-
+        # print(dir(from_state))
+        # django 1.8 doesn't have ProjectState.render()
         model = from_state.render().get_model(app_label, self.name)
         vector_field = model._meta.get_field_by_name(self.fts_vector)[0]
         if not isinstance(vector_field, TSVectorField):

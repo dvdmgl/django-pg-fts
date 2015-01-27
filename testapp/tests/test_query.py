@@ -2,9 +2,11 @@
 from __future__ import unicode_literals
 from django.test import TestCase
 from testapp.models import TSQueryModel, TSMultidicModel, Related
+from pg_fts.fields import TSVectorField
 from django.core import exceptions
 from django.utils import encoding
-from pg_fts.aggregates import FTSRank
+from django_filters.filterset import FilterSet
+from django_filters import CharFilter
 
 __all__ = ('TestQueryingSingleDictionary', 'TestQueryingMultiDictionary')
 
@@ -53,14 +55,14 @@ salvão save o the planeta planet"""
         )
 
     def test_5_make_trigger_function_protect_fts_field_against_django_updates(self):
-        q = TSQueryModel.objects.get(id=1)
+        q = TSQueryModel.objects.all()[0]
         old_tsvector = q.tsvector
         q.sometext = 'foo'
         q.save()
-        self.assertEquals(old_tsvector, TSQueryModel.objects.get(id=1).tsvector)
+        self.assertEquals(old_tsvector, TSQueryModel.objects.get(id=q.id).tsvector)
         q.title = 'bar'
         q.save()
-        self.assertNotEquals(old_tsvector, TSQueryModel.objects.get(id=1).tsvector)
+        self.assertNotEquals(old_tsvector, TSQueryModel.objects.get(id=q.id).tsvector)
 
     def test_tsquery(self):
         q = TSQueryModel.objects.filter(tsvector__tsquery='para & mesmo')
@@ -92,6 +94,23 @@ salvão save o the planeta planet"""
     def test_related_search(self):
         q = Related.objects.filter(single__tsvector__search='para mesmo')
         self.assertEqual(len(q), 2)
+
+    def test_django_filter(self):
+        class Filter(FilterSet):
+            filter_overrides = {
+                TSVectorField: {
+                    'filter_class': CharFilter,
+                    'extra': lambda f: {
+                        'lookup_type': 'search'
+                    }
+                }
+            }
+
+            class Meta:
+                model = TSQueryModel
+                fields = ['tsvector']
+        f = Filter({'tsvector': 'like me'}, TSQueryModel.objects.all())
+        self.assertEqual(len(f.qs), 1)
 
 
 class TestQueryingMultiDictionary(TestCase):
@@ -170,15 +189,14 @@ salvão save o the planeta planet"""
             ), 1)
 
     def test_5_multidict_make_trigger_function_protect_fts_field_against_django_updates(self):
-        q = TSMultidicModel.objects.get(id=1)
+        q = TSMultidicModel.objects.all()[0]
         old_tsvector = q.tsvector
         q.sometext = 'foo'
         q.save()
-        self.assertEquals(old_tsvector, TSMultidicModel.objects.get(id=1).tsvector)
+        self.assertEquals(old_tsvector, TSMultidicModel.objects.get(id=q.id).tsvector)
         q.title = 'bar'
         q.save()
-        self.assertNotEquals(old_tsvector, TSMultidicModel.objects.get(id=1).tsvector)
-
+        self.assertNotEquals(old_tsvector, TSMultidicModel.objects.get(id=q.id).tsvector)
 
     def test_related_multidict(self):
         self.assertEqual(len(
