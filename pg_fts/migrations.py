@@ -63,7 +63,7 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
             raise AttributeError
 
         try:
-            dict_field = model._meta.get_field(vector_field.dictionary)[0]
+            dict_field = model._meta.get_field(vector_field.dictionary)
             dictionary = "NEW.%s::regconfig" % (
                 dict_field.get_attname_column()[1])
             fields.append('NEW.{0} <> OLD.{0}'.format(vector_field.dictionary))
@@ -90,7 +90,7 @@ FOR EACH ROW EXECUTE PROCEDURE {model}_{fts_name}_update()"""
             raise AttributeError
 
         try:
-            dict_field = model._meta.get_field(vector_field.dictionary)[0]
+            dict_field = model._meta.get_field(vector_field.dictionary)
             dictionary = "%s::regconfig" % (
                 dict_field.get_attname_column()[1])
         except:
@@ -151,7 +151,7 @@ class BaseVectorOperation(Operation):
                           to_state):
 
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
         schema_editor.execute(self.forward_fn(
             model,
             vector_field
@@ -161,7 +161,7 @@ class BaseVectorOperation(Operation):
                            to_state):
 
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
 
         schema_editor.execute(self.backward_fn(
             model,
@@ -219,7 +219,7 @@ class CreateFTSTriggerOperation(BaseVectorOperation):
                            to_state):
 
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
 
         schema_editor.execute(self.backward_fn(
             model,
@@ -282,7 +282,7 @@ class CreateFTSIndexOperation(BaseVectorOperation):
         # print(dir(from_state))
         # django 1.8 doesn't have ProjectState.render()
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
         if not isinstance(vector_field, TSVectorField):
             raise AttributeError
         schema_editor.execute(self.sql_creator.create_index(
@@ -293,7 +293,7 @@ class CreateFTSIndexOperation(BaseVectorOperation):
                            to_state):
 
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
 
         schema_editor.execute(self.sql_creator.delete_index(
             model,
@@ -318,7 +318,7 @@ class DeleteFTSIndexOperation(CreateFTSIndexOperation):
     def database_forwards(self, app_label, schema_editor, from_state,
                           to_state):
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
 
         schema_editor.execute(self.sql_creator.delete_index(
             model,
@@ -329,7 +329,7 @@ class DeleteFTSIndexOperation(CreateFTSIndexOperation):
                            to_state):
 
         model = from_state.render().get_model(app_label, self.name)
-        vector_field = model._meta.get_field(self.fts_vector)[0]
+        vector_field = model._meta.get_field(self.fts_vector)
         if not isinstance(vector_field, TSVectorField):
             raise AttributeError
         schema_editor.execute(self.sql_creator.create_index(
