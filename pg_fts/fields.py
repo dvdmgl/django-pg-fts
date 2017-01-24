@@ -131,10 +131,10 @@ class TSVectorField(TSVectorBaseField):
     def _get_fields_and_ranks(self):
         for field in self.fields:
             if isinstance(field, (tuple, list)):
-                yield (self.model._meta.get_field_by_name(field[0])[0],
+                yield (self.model._meta.get_field(field[0]),
                        field[1].upper())
             else:
-                yield (self.model._meta.get_field_by_name(field)[0],
+                yield (self.model._meta.get_field(field),
                        self.DEFAUL_RANK)
 
     def check(self, **kwargs):
@@ -176,7 +176,7 @@ class TSVectorField(TSVectorBaseField):
                 )
             elif field:
                 try:
-                    t = self.model._meta.get_field_by_name(field)[0]
+                    t = self.model._meta.get_field(field)
                     if not isinstance(t, (models.CharField, models.TextField)):
                         errors.append(
                             checks.Error(
